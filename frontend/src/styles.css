@@ -177,7 +177,7 @@ h1, h2, h3 { line-height: 1.2; }
 /* ---------- misc ---------- */
 .muted { color: var(--text-muted); }
 .center { text-align: center; }
-.mt-8 { margin-top: 8px; } .mt-16 { margin-top: 16px; } .mt-24 { margin-top: 24px; }
+.mt-4 { margin-top: 4px; } .mt-8 { margin-top: 8px; } .mt-16 { margin-top: 16px; } .mt-24 { margin-top: 24px; }
 .mb-8 { margin-bottom: 8px; } .mb-16 { margin-bottom: 16px; }
 .tagline { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .badge { background: var(--accent); color: #fff; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; }

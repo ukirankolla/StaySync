@@ -12,9 +12,15 @@ export default function Discover() {
   const [blocked, setBlocked] = useState(new Set())
   const [connected, setConnected] = useState(new Set())
   const [viewing, setViewing] = useState(null)
+  const [filters, setFilters] = useState({ area: '', maxBudget: '', sort: 'ml' })
+  const [applied, setApplied] = useState(null)
 
   useEffect(() => {
-    api('/matching/recommendations')
+    const params = new URLSearchParams()
+    if (applied?.area) params.set('area', applied.area)
+    if (applied?.maxBudget) params.set('max_budget', applied.maxBudget)
+    const qs = params.toString()
+    api(`/matching/recommendations${qs ? `?${qs}` : ''}`)
       .then(setMatches)
       .catch((e) => setErr(e.message))
       .finally(() => setLoading(false))
@@ -24,7 +30,7 @@ export default function Discover() {
     api('/matching/connections')
       .then((conns) => setConnected(new Set(conns.filter((c) => ['pending', 'accepted'].includes(c.status)).map((c) => c.peer_id))))
       .catch(() => {})
-  }, [])
+  }, [applied])
 
   const handleAction = (type, userId) => {
     if (type === 'connected') {
@@ -40,6 +46,11 @@ export default function Discover() {
   }
 
   const visible = matches.filter((m) => !blocked.has(m.user_id))
+  const sorted = [...visible].sort((a, b) => {
+    if (filters.sort === 'score') return b.score - a.score
+    if (filters.sort === 'budget') return (a.budget_min || 0) - (b.budget_min || 0)
+    return (b.ml_score ?? b.score) - (a.ml_score ?? a.score)
+  })
 
   if (loading) return <div className="page-muted">Finding compatible roommates…</div>
   if (err) return <div className="page-muted">{err}</div>
@@ -52,9 +63,32 @@ export default function Discover() {
       </div>
       <p className="muted mb-16">Ranked by compatibility score and our ML model. Transparency first — every score comes with reasons.</p>
 
+      <div className="card mb-16" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>
+        <div className="field">
+          <label>Area</label>
+          <input className="input" placeholder="e.g. Koramangala" value={filters.area}
+                 onChange={(e) => setFilters({ ...filters, area: e.target.value })} />
+        </div>
+        <div className="field">
+          <label>Max budget (₹/mo)</label>
+          <input className="input" type="number" placeholder="15000" value={filters.maxBudget}
+                 onChange={(e) => setFilters({ ...filters, maxBudget: e.target.value })} />
+        </div>
+        <div className="field">
+          <label>Sort by</label>
+          <select className="select" value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value })}>
+            <option value="ml">Best match (ML)</option>
+            <option value="score">Compatibility score</option>
+            <option value="budget">Lowest budget</option>
+          </select>
+        </div>
+        <button className="btn btn-primary btn-sm" onClick={() => setApplied({ area: filters.area, maxBudget: filters.maxBudget })}>Apply</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => { setFilters({ area: '', maxBudget: '', sort: 'ml' }); setApplied(null) }}>Reset</button>
+      </div>
+
       {notice && <div className="alert alert-success mb-16">{notice}</div>}
 
-      {visible.length === 0 ? (
+      {sorted.length === 0 ? (
         <div className="empty">
           No matches yet.
           {matches.length === 0 && (
@@ -63,7 +97,7 @@ export default function Discover() {
         </div>
       ) : (
         <div className="grid grid-2">
-          {visible.map((m) => (
+          {sorted.map((m) => (
             <MatchCard key={m.user_id} match={m} onAction={handleAction} onViewProfile={setViewing} />
           ))}
         </div>

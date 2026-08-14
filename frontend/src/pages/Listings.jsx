@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { useAuth } from '../context/AuthContext'
+import ProfileModal from '../components/ProfileModal'
 
 const CITIES = ['Bengaluru', 'Mumbai', 'Delhi', 'Pune', 'Hyderabad', 'Chennai', 'Kolkata']
 
@@ -19,6 +20,8 @@ export default function Listings() {
   const [contacting, setContacting] = useState(null)
   const [err, setErr] = useState('')
   const [notice, setNotice] = useState('')
+  const [editId, setEditId] = useState(null)
+  const [viewOwner, setViewOwner] = useState(null)
 
   const load = () => {
     api(`/listings${filters.city ? `?city=${encodeURIComponent(filters.city)}` : ''}${filters.maxRent ? `${filters.city ? '&' : '?'}max_rent=${filters.maxRent}` : ''}`)
@@ -27,9 +30,27 @@ export default function Listings() {
   }
   useEffect(load, [filters])
 
-  useEffect(() => {
-    api('/listings/mine').then(setMine).catch(() => {})
-  }, [])
+  const loadMine = () => api('/listings/mine').then(setMine).catch(() => {})
+  useEffect(() => { loadMine() }, [])
+
+  const emptyForm = { title: '', description: '', city: 'Bengaluru', area: '', rent: '', deposit: '', room_type: 'private', bhk: '', amenities: '', available_from: '', looking_for: '', photos: [] }
+
+  const startEdit = (l) => {
+    setForm({
+      title: l.title, description: l.description || '', city: l.city, area: l.area || '',
+      rent: l.rent, deposit: l.deposit || '', room_type: l.room_type, bhk: l.bhk || '',
+      amenities: (l.amenities || []).join(', '), available_from: l.available_from || '',
+      looking_for: l.looking_for || '', photos: l.photos || [],
+    })
+    setEditId(l.id)
+    setShowForm(true)
+  }
+
+  const cancelEdit = () => {
+    setEditId(null)
+    setForm(emptyForm)
+    setShowForm(false)
+  }
 
   const create = async (e) => {
     e.preventDefault()
@@ -43,12 +64,24 @@ export default function Listings() {
         available_from: form.available_from || null, looking_for: form.looking_for === '' ? null : Number(form.looking_for),
         photos: form.photos,
       }
-      await api('/listings', { method: 'POST', body: payload })
-      setForm({ title: '', description: '', city: 'Bengaluru', area: '', rent: '', deposit: '', room_type: 'private', bhk: '', amenities: '', available_from: '', looking_for: '', photos: [] })
-      setShowForm(false)
-      setNotice('Listing submitted for review.')
+      if (editId) {
+        await api(`/listings/${editId}`, { method: 'PUT', body: payload })
+        setNotice('Listing updated.')
+      } else {
+        await api('/listings', { method: 'POST', body: payload })
+        setNotice('Listing submitted for review.')
+      }
+      cancelEdit()
       setTimeout(() => setNotice(''), 4000)
-      api('/listings/mine').then(setMine).catch(() => {})
+      loadMine()
+      load()
+    } catch (e2) { setErr(e2.message) }
+  }
+
+  const toggleActive = async (l) => {
+    try {
+      await api(`/listings/${l.id}`, { method: 'PUT', body: { is_active: !l.is_active } })
+      loadMine()
     } catch (e2) { setErr(e2.message) }
   }
 
@@ -128,7 +161,10 @@ export default function Listings() {
 
       {showForm && (
         <form className="card mb-16" onSubmit={create}>
-          <h3>Post a room / flat listing</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3>{editId ? 'Edit listing' : 'Post a room / flat listing'}</h3>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={cancelEdit}>× Cancel</button>
+          </div>
           <div className="form-row mt-8">
             <div className="field">
               <label>Title</label>
@@ -206,7 +242,7 @@ export default function Listings() {
             <label>Description</label>
             <textarea className="input" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           </div>
-          <button className="btn btn-primary btn-block mt-16">Submit for review</button>
+          <button className="btn btn-primary btn-block mt-16">{editId ? 'Save changes' : 'Submit for review'}</button>
         </form>
       )}
 
@@ -243,6 +279,7 @@ export default function Listings() {
                     <button className="btn btn-primary btn-sm" disabled={contacting === l.id} onClick={() => contact(l)}>
                       {contacting === l.id ? 'Sending…' : 'Contact owner'}
                     </button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setViewOwner(l.owner_id)}>View owner</button>
                     <button className="btn btn-ghost btn-sm" onClick={() => report(l)}>Report</button>
                   </>
                 )}
@@ -260,12 +297,25 @@ export default function Listings() {
               <div className="card" key={l.id}>
                 <strong>{l.title}</strong>
                 <span className={`status-pill status-${l.status === 'approved' ? 'accepted' : 'pending'}`} style={{ marginLeft: 8 }}>{l.status}</span>
+                {l.status === 'approved' && (
+                  <span className={`status-pill ${l.is_active ? 'status-accepted' : 'status-declined'}`} style={{ marginLeft: 8 }}>{l.is_active ? 'active' : 'hidden'}</span>
+                )}
                 <p className="muted mt-8 mb-8">₹{l.rent.toLocaleString('en-IN')}/mo · {l.city}</p>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button className="btn btn-sm" onClick={() => startEdit(l)}>Edit</button>
+                  {l.status === 'approved' && (
+                    <button className="btn btn-ghost btn-sm" onClick={() => toggleActive(l)}>
+                      {l.is_active ? 'Deactivate' : 'Activate'}
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         </>
       )}
+
+      {viewOwner && <ProfileModal userId={viewOwner} onClose={() => setViewOwner(null)} />}
     </div>
   )
 }

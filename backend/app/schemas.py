@@ -31,6 +31,25 @@ class OtpVerifyRequest(BaseModel):
     purpose: str = "login"
 
 
+class ForgotPasswordRequest(BaseModel):
+    identifier: str
+
+
+class ResetPasswordRequest(BaseModel):
+    identifier: str
+    code: str
+    new_password: str = Field(min_length=6, max_length=128)
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=6, max_length=128)
+
+
+class VerifyProfileRequest(BaseModel):
+    code: str
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -62,6 +81,7 @@ class ProfileUpdate(BaseModel):
     bio: str | None = None
     is_visible: bool | None = None
     photos: list[str] | None = None
+    privacy: dict | None = None
 
 
 class ProfileOut(BaseModel):
@@ -82,6 +102,7 @@ class ProfileOut(BaseModel):
     is_verified: bool
     is_visible: bool
     photos: list[str] = []
+    privacy: dict = {}
     created_at: datetime
     updated_at: datetime
 

@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -11,6 +13,7 @@ from ..schemas import (
     MatchResult,
 )
 from ..services.agents import get_agent
+from ..services.chat_manager import chat_manager
 from ..services.events import track
 from ..services.matching import compute_compatibility
 from ..services.ml_model import predict as ml_predict
@@ -64,7 +67,8 @@ def _to_match_result(peer: User, qa: Questionnaire | None, qb: Questionnaire | N
 
 
 @router.get("/recommendations", response_model=list[MatchResult])
-def recommendations(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def recommendations(user: User = Depends(get_current_user), db: Session = Depends(get_db),
+                    area: str | None = None, max_budget: int | None = None):
     profile = db.query(Profile).filter(Profile.user_id == user.id).first()
     mine_q = db.query(Questionnaire).filter(Questionnaire.user_id == user.id).first()
 
@@ -86,6 +90,10 @@ def recommendations(user: User = Depends(get_current_user), db: Session = Depend
     )
     if profile and profile.city:
         query = query.where(Profile.city == profile.city)
+    if area:
+        query = query.where(Profile.preferred_area.ilike(f"%{area}%"))
+    if max_budget:
+        query = query.where(Profile.budget_min <= max_budget)
 
     results: list[MatchResult] = []
     for peer in db.scalars(query).all():
@@ -119,7 +127,7 @@ def score_with(peer_id: int, user: User = Depends(get_current_user), db: Session
 
 
 @router.post("/connect")
-def connect(payload: ConnectRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def connect(payload: ConnectRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     if payload.recipient_id == user.id:
         raise HTTPException(status_code=400, detail="Cannot connect with yourself")
     peer, qa, qb, pa, pb = _load_pair(user, payload.recipient_id, db)
@@ -139,6 +147,13 @@ def connect(payload: ConnectRequest, user: User = Depends(get_current_user), db:
     db.add(conn)
     db.commit()
     track(db, user.id, "connect_requested", {"recipient_id": payload.recipient_id})
+
+    requester_name = pa.full_name if pa else "Someone"
+    await chat_manager.send_to_user(payload.recipient_id, {
+        "type": "connection",
+        "event": "requested",
+        "data": {"peer_id": user.id, "peer_name": requester_name, "connection_id": conn.id},
+    })
     return {"id": conn.id, "status": conn.status, "score": conn.score_at_connect}
 
 
@@ -174,17 +189,24 @@ def my_connections(user: User = Depends(get_current_user), db: Session = Depends
 
 
 @router.post("/connections/{connection_id}/respond", response_model=dict)
-def respond(connection_id: int, action: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def respond(connection_id: int, action: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     conn = db.get(Connection, connection_id)
     if not conn or conn.recipient_id != user.id:
         raise HTTPException(status_code=404, detail="Connection not found")
     if action not in ("accept", "decline"):
         raise HTTPException(status_code=400, detail="Action must be accept or decline")
     conn.status = "accepted" if action == "accept" else "declined"
-    from datetime import datetime, timezone
     conn.responded_at = datetime.now(timezone.utc)
     db.commit()
     track(db, user.id, f"connection_{conn.status}", {"connection_id": connection_id})
+
+    peer_profile = db.query(Profile).filter(Profile.user_id == user.id).first()
+    await chat_manager.send_to_user(conn.requester_id, {
+        "type": "connection",
+        "event": conn.status,
+        "data": {"peer_id": user.id, "peer_name": peer_profile.full_name if peer_profile else "Someone",
+                 "connection_id": conn.id},
+    })
     return {"id": conn.id, "status": conn.status}
 
 

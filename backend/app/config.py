@@ -15,6 +15,14 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
     env: str = "development"
 
+    # SMTP for email OTP delivery. Leave smtp_host empty to print OTPs to console (dev).
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    mail_from: str = "StaySync <no-reply@staysync.local>"
+    smtp_use_tls: bool = True
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

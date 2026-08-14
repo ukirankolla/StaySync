@@ -57,6 +57,7 @@ class Profile(Base):
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     is_visible: Mapped[bool] = mapped_column(Boolean, default=True)
     photos: Mapped[list] = mapped_column(JSON, default=list)
+    privacy: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 

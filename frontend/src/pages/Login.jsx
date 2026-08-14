@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -31,6 +32,7 @@ export default function Login() {
     <div className="mt-24">
       <form className="form card" onSubmit={submit}>
         <h2 className="center">Log in to StaySync</h2>
+        {location.state?.notice && <div className="alert alert-success">{location.state.notice}</div>}
         {error && <div className="alert">{error}</div>}
         <div className="field">
           <label>Email or phone</label>
@@ -45,6 +47,9 @@ export default function Login() {
         <button className="btn btn-primary btn-block" disabled={busy}>{busy ? 'Logging in…' : 'Log in'}</button>
         <div className="form-note">
           Prefer a code? <Link to="/otp">Log in with OTP</Link>
+        </div>
+        <div className="form-note">
+          <Link to="/forgot-password">Forgot password?</Link>
         </div>
         <div className="form-note">
           New here? <Link to="/register">Create an account</Link>

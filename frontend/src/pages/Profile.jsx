@@ -5,6 +5,14 @@ import { useAuth } from '../context/AuthContext'
 
 const OCCUPATIONS = ['student', 'professional', 'other']
 const CITIES = ['Bengaluru', 'Mumbai', 'Delhi', 'Pune', 'Hyderabad', 'Chennai', 'Kolkata']
+const PRIVACY_FIELDS = [
+  ['age', 'my age'],
+  ['occupation', 'my occupation'],
+  ['budget', 'my budget'],
+  ['bio', 'my bio'],
+  ['move_in_date', 'my move-in date'],
+  ['photos', 'my photos'],
+]
 
 export default function Profile() {
   const { user } = useAuth()
@@ -12,13 +20,21 @@ export default function Profile() {
   const [form, setForm] = useState({
     full_name: '', age: '', occupation: 'student', occupation_detail: '',
     city: 'Bengaluru', preferred_area: '', budget_min: '', budget_max: '',
-    move_in_date: '', bio: '', is_visible: true,
+    move_in_date: '', bio: '', is_visible: true, photos: [],
+    privacy: {},
   })
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [isVerified, setIsVerified] = useState(false)
+  const [verifyMsg, setVerifyMsg] = useState('')
+  const [otpCode, setOtpCode] = useState('')
+  const [otpStep, setOtpStep] = useState('idle')
+  const [devCode, setDevCode] = useState('')
+  const [pw, setPw] = useState({ current_password: '', new_password: '' })
+  const [pwMsg, setPwMsg] = useState('')
 
   useEffect(() => {
     api('/profile/me').then((p) => {
@@ -28,7 +44,9 @@ export default function Profile() {
         preferred_area: p.preferred_area || '', budget_min: p.budget_min || '',
         budget_max: p.budget_max || '', move_in_date: p.move_in_date || '',
         bio: p.bio || '', is_visible: p.is_visible, photos: p.photos || [],
+        privacy: p.privacy || {},
       })
+      setIsVerified(p.is_verified)
     }).catch(() => {})
     api('/matching/agents/onboarding').then(setProgress).catch(() => {})
   }, [user])
@@ -62,6 +80,41 @@ export default function Profile() {
 
   const removePhoto = (url) => setForm((f) => ({ ...f, photos: (f.photos || []).filter((p) => p !== url) }))
 
+  const requestVerify = async () => {
+    setVerifyMsg('')
+    setOtpCode('')
+    try {
+      const res = await api('/profile/verify/request', { method: 'POST', body: {} })
+      setOtpStep('sent')
+      setDevCode(res.dev_code || '')
+    } catch (err) {
+      setVerifyMsg(err.message)
+    }
+  }
+
+  const confirmVerify = async () => {
+    try {
+      await api('/profile/verify/confirm', { method: 'POST', body: { code: otpCode } })
+      setIsVerified(true)
+      setOtpStep('idle')
+      setVerifyMsg('Your profile is now verified ✓')
+    } catch (err) {
+      setVerifyMsg(err.message)
+    }
+  }
+
+  const changePassword = async (e) => {
+    e.preventDefault()
+    setPwMsg('')
+    try {
+      await api('/auth/change-password', { method: 'POST', body: pw })
+      setPwMsg('Password updated')
+      setPw({ current_password: '', new_password: '' })
+    } catch (err) {
+      setPwMsg(err.message)
+    }
+  }
+
   const submit = async (e) => {
     e.preventDefault()
     setError('')
@@ -74,7 +127,7 @@ export default function Profile() {
         budget_min: form.budget_min === '' ? null : Number(form.budget_min),
         budget_max: form.budget_max === '' ? null : Number(form.budget_max),
         move_in_date: form.move_in_date, bio: form.bio, is_visible: form.is_visible,
-        photos: form.photos || [],
+        photos: form.photos || [], privacy: form.privacy || {},
       }
       await api('/profile/me', { method: 'PUT', body: payload })
       setSaved(true)
@@ -90,6 +143,31 @@ export default function Profile() {
 
   return (
     <div className="mt-8">
+      <div className="card mb-16" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <strong>Profile verification</strong>
+          <div className="muted mt-4">
+            {isVerified
+              ? <span style={{ color: 'var(--success)' }}>✓ Verified — your identity is confirmed.</span>
+              : 'Verify your email to earn a verified badge and boost trust with roommates.'}
+          </div>
+        </div>
+        {otpStep !== 'idle' && <div className="muted" style={{ fontSize: '.8rem' }}>Dev mode: code is {devCode}</div>}
+        {!isVerified && otpStep === 'idle' && (
+          <button className="btn btn-sm" onClick={requestVerify}>Verify now</button>
+        )}
+        {otpStep === 'sent' && (
+          <div className="field" style={{ display: 'flex', gap: 8, margin: 0, alignItems: 'end' }}>
+            <div>
+              <label>OTP</label>
+              <input className="input" value={otpCode} onChange={(e) => setOtpCode(e.target.value)} style={{ width: 110 }} />
+            </div>
+            <button className="btn btn-sm" onClick={confirmVerify}>Confirm</button>
+          </div>
+        )}
+        {verifyMsg && <div className="alert alert-success" style={{ margin: 0 }}>{verifyMsg}</div>}
+      </div>
+
       {progress && (
         <div className="card mb-16">
           <strong>Profile completion: {progress.progress}%</strong>
@@ -189,10 +267,43 @@ export default function Profile() {
           Show my profile to potential roommates
         </label>
 
+        <hr className="mt-16 mb-16" />
+        <strong>Privacy — what others can see about you</strong>
+        <p className="muted mb-8" style={{ fontSize: '.85rem' }}>
+          You always control your info. Turning a field off hides it from other users' views of your profile.
+        </p>
+        <div className="grid grid-2">
+          {PRIVACY_FIELDS.map(([key, label]) => (
+            <label key={key} className="form-note" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input type="checkbox" checked={form.privacy[key] !== false}
+                     onChange={(e) => setForm((f) => ({ ...f, privacy: { ...f.privacy, [key]: e.target.checked } }))} />
+              Show {label}
+            </label>
+          ))}
+        </div>
+
         <button className="btn btn-primary btn-block" disabled={busy}>{busy ? 'Saving…' : 'Save profile'}</button>
         <button type="button" className="btn btn-ghost btn-block" onClick={() => navigate('/questionnaire')}>
           Complete lifestyle questionnaire →
         </button>
+      </form>
+
+      <form className="card mt-16" style={{ maxWidth: 640 }} onSubmit={changePassword}>
+        <h3>Change password</h3>
+        {pwMsg && <div className={pwMsg.includes('updated') ? 'alert alert-success' : 'alert'}>{pwMsg}</div>}
+        <div className="form-row">
+          <div className="field">
+            <label>Current password</label>
+            <input className="input" type="password" value={pw.current_password}
+                   onChange={(e) => setPw({ ...pw, current_password: e.target.value })} required />
+          </div>
+          <div className="field">
+            <label>New password</label>
+            <input className="input" type="password" value={pw.new_password}
+                   onChange={(e) => setPw({ ...pw, new_password: e.target.value })} required minLength={6} />
+          </div>
+        </div>
+        <button className="btn btn-sm">Update password</button>
       </form>
     </div>
   )

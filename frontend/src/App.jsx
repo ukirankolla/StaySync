@@ -7,6 +7,7 @@ import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import OTPLogin from './pages/OTPLogin'
+import ForgotPassword from './pages/ForgotPassword'
 import Profile from './pages/Profile'
 import Questionnaire from './pages/Questionnaire'
 import Discover from './pages/Discover'
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/login" element={user ? <Navigate to="/discover" replace /> : <Login />} />
           <Route path="/register" element={user ? <Navigate to="/discover" replace /> : <Register />} />
           <Route path="/otp" element={user ? <Navigate to="/discover" replace /> : <OTPLogin />} />
+          <Route path="/forgot-password" element={user ? <Navigate to="/profile" replace /> : <ForgotPassword />} />
           <Route path="/profile" element={<Protected><Profile /></Protected>} />
           <Route path="/questionnaire" element={<Protected><Questionnaire /></Protected>} />
           <Route path="/discover" element={<Protected><Discover /></Protected>} />
