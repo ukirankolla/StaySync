@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
             Base.metadata.create_all(bind=engine)
             from scripts.seed import seed
             seed()
-            print("[StaySync] SEED_RESET: demo data refreshed")
+            print("[StaySync] SEED_RESET: bootstrap complete")
         except Exception as exc:  # noqa: BLE001
             print(f"[StaySync] SEED_RESET failed: {exc}")
     elif settings.seed_on_start:

@@ -91,16 +91,17 @@ The app is built to run as three pieces: **Vercel** (website), **Railway** (Fast
 - Add a custom domain in Vercel (e.g. `staysync.app`) and HTTPS is automatic.
 - Register the domain in [Google Search Console](https://search.google.com/search-console) and submit the sitemap/URL so it appears in search (takes days–weeks).
 
-## Demo accounts
+## Admin account
+
+The app contains only real user registrations — no demo/fake data. On a fresh
+database the admin (owner) login is created automatically when `SEED_ON_START`
+is enabled:
 
 | Role  | Email              | Password |
 |-------|--------------------|----------|
 | Admin | admin@staysync.dev | admin123 |
-| User  | arya@example.com   | demo123  |
-| User  | bharat@example.com | demo123  |
-| User  | chetan@example.com | demo123  |
-| User  | divya@example.com  | demo123  |
-| User  | esha@example.com   | demo123  |
+
+Both values are overridable via the `ADMIN_EMAIL` / `ADMIN_PASSWORD` env vars.
 
 ## Feature map (MVP per PRD)
 

@@ -19,8 +19,13 @@ class Settings(BaseSettings):
     public_base_url: str = ""
     # Seed demo data on boot when the database is empty (used on first deploy).
     seed_on_start: bool = False
-    # Drop all tables and re-seed demo data on boot (used to refresh demo data).
+    # Drop all tables and bootstrap on boot (used to reset a fresh database).
     seed_reset: bool = False
+
+    # Owner/admin login. Created on boot when seed_on_start/seed_reset is on and
+    # the admin account does not exist yet. Configure via env vars in production.
+    admin_email: str = "admin@staysync.dev"
+    admin_password: str = "admin123"
 
     # SMTP for email OTP delivery. Leave smtp_host empty to print OTPs to console (dev).
     smtp_host: str = ""
