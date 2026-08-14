@@ -26,7 +26,17 @@ async def lifespan(app: FastAPI):
         print("[StaySync] Database ready")
     except Exception as exc:  # noqa: BLE001
         print(f"[StaySync] DATABASE STARTUP FAILED: {exc}")
-    if settings.seed_on_start:
+    if settings.seed_reset:
+        try:
+            Base.metadata.drop_all(bind=engine)
+            print("[StaySync] SEED_RESET: dropped all tables")
+            Base.metadata.create_all(bind=engine)
+            from scripts.seed import seed
+            seed()
+            print("[StaySync] SEED_RESET: demo data refreshed")
+        except Exception as exc:  # noqa: BLE001
+            print(f"[StaySync] SEED_RESET failed: {exc}")
+    elif settings.seed_on_start:
         try:
             from scripts.seed import seed
             seed()

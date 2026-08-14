@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -68,7 +68,7 @@ def _to_match_result(peer: User, qa: Questionnaire | None, qb: Questionnaire | N
 
 @router.get("/recommendations", response_model=list[MatchResult])
 def recommendations(user: User = Depends(get_current_user), db: Session = Depends(get_db),
-                    area: str | None = None, max_budget: int | None = None):
+                    area: str | None = None, city: str | None = None, max_budget: int | None = None):
     profile = db.query(Profile).filter(Profile.user_id == user.id).first()
     mine_q = db.query(Questionnaire).filter(Questionnaire.user_id == user.id).first()
 
@@ -88,10 +88,11 @@ def recommendations(user: User = Depends(get_current_user), db: Session = Depend
         .where(User.id != user.id, User.is_active.is_(True), User.is_suspended.is_(False),
                Profile.is_visible.is_(True), Questionnaire.completed_at.isnot(None))
     )
-    if profile and profile.city:
-        query = query.where(Profile.city == profile.city)
+    if city:
+        query = query.where(Profile.city.ilike(f"%{city}%"))
     if area:
-        query = query.where(Profile.preferred_area.ilike(f"%{area}%"))
+        like = f"%{area}%"
+        query = query.where(or_(Profile.preferred_area.ilike(like), Profile.city.ilike(like)))
     if max_budget:
         query = query.where(Profile.budget_min <= max_budget)
 

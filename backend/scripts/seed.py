@@ -87,6 +87,78 @@ DEMO_USERS = [
             "work_routine": 3, "social_pref": 3, "pets": "Love pets / have pets",
         },
     },
+    {
+        "email": "farah@example.com", "full_name": "Farah Khan", "age": 25,
+        "occupation": "professional", "occupation_detail": "UX Designer",
+        "city": "Hyderabad", "preferred_area": "Gachibowli", "budget_min": 15000, "budget_max": 22000,
+        "move_in_date": "2026-09-10", "bio": "Biryani lover, weekend treks, tidy by nature.",
+        "answers": {
+            "cleanliness": 4, "sleep_time": "10 PM – 11 PM", "wake_time": "6 AM – 8 AM",
+            "noise_tolerance": 2, "quiet_after": "Quiet after 10 PM", "smoking": "Never",
+            "drinking": "Never", "food_pref": "Non-vegetarian", "guests": 2,
+            "work_routine": 4, "social_pref": 3, "pets": "Open to pets",
+        },
+    },
+    {
+        "email": "ganesh@example.com", "full_name": "Ganesh Iyer", "age": 28,
+        "occupation": "professional", "occupation_detail": "Financial Analyst",
+        "city": "Chennai", "preferred_area": "Adyar", "budget_min": 13000, "budget_max": 19000,
+        "move_in_date": "2026-09-05", "bio": "Early riser, filter coffee enthusiast, keep it clean.",
+        "answers": {
+            "cleanliness": 5, "sleep_time": "Before 10 PM", "wake_time": "Before 6 AM",
+            "noise_tolerance": 1, "quiet_after": "Quiet after 10 PM", "smoking": "Never",
+            "drinking": "Never", "food_pref": "Vegetarian", "guests": 1,
+            "work_routine": 5, "social_pref": 2, "pets": "No pets please",
+        },
+    },
+    {
+        "email": "hina@example.com", "full_name": "Hina Patel", "age": 24,
+        "occupation": "professional", "occupation_detail": "Content Strategist",
+        "city": "Mumbai", "preferred_area": "Andheri", "budget_min": 18000, "budget_max": 26000,
+        "move_in_date": "2026-09-20", "bio": "Night owl, food blogger, love hosting friends.",
+        "answers": {
+            "cleanliness": 3, "sleep_time": "12 AM – 2 AM", "wake_time": "8 AM – 10 AM",
+            "noise_tolerance": 4, "quiet_after": "No preference", "smoking": "Never",
+            "drinking": "Occasionally", "food_pref": "Vegetarian", "guests": 4,
+            "work_routine": 3, "social_pref": 4, "pets": "Open to pets",
+        },
+    },
+    {
+        "email": "ishaan@example.com", "full_name": "Ishaan Verma", "age": 22,
+        "occupation": "student", "occupation_detail": "CA aspirant",
+        "city": "New Delhi", "preferred_area": "Dwarka", "budget_min": 10000, "budget_max": 15000,
+        "move_in_date": "2026-08-30", "bio": "Quiet and focused, chess in free time, no party scene.",
+        "answers": {
+            "cleanliness": 4, "sleep_time": "10 PM – 11 PM", "wake_time": "6 AM – 8 AM",
+            "noise_tolerance": 2, "quiet_after": "Quiet after 10 PM", "smoking": "Never",
+            "drinking": "Never", "food_pref": "Vegetarian", "guests": 1,
+            "work_routine": 5, "social_pref": 1, "pets": "No pets please",
+        },
+    },
+    {
+        "email": "jaya@example.com", "full_name": "Jaya Reddy", "age": 27,
+        "occupation": "professional", "occupation_detail": "HR Manager",
+        "city": "Hyderabad", "preferred_area": "Madhapur", "budget_min": 16000, "budget_max": 24000,
+        "move_in_date": "2026-10-01", "bio": "Dog mom, gym regular, Sunday brunches.",
+        "answers": {
+            "cleanliness": 4, "sleep_time": "11 PM – 12 AM", "wake_time": "6 AM – 8 AM",
+            "noise_tolerance": 3, "quiet_after": "No preference", "smoking": "Never",
+            "drinking": "Occasionally", "food_pref": "Non-vegetarian", "guests": 3,
+            "work_routine": 4, "social_pref": 3, "pets": "Love pets / have pets",
+        },
+    },
+    {
+        "email": "kunal@example.com", "full_name": "Kunal Desai", "age": 26,
+        "occupation": "professional", "occupation_detail": "Backend Engineer",
+        "city": "Pune", "preferred_area": "Koregaon Park", "budget_min": 14000, "budget_max": 20000,
+        "move_in_date": "2026-09-12", "bio": "Techie, cricket on weekends, peaceful home.",
+        "answers": {
+            "cleanliness": 4, "sleep_time": "11 PM – 12 AM", "wake_time": "7 AM – 9 AM",
+            "noise_tolerance": 2, "quiet_after": "Quiet after 11 PM", "smoking": "Never",
+            "drinking": "Occasionally", "food_pref": "Vegetarian", "guests": 2,
+            "work_routine": 4, "social_pref": 2, "pets": "No pets please",
+        },
+    },
 ]
 
 LISTINGS = [

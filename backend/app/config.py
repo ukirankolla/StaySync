@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     public_base_url: str = ""
     # Seed demo data on boot when the database is empty (used on first deploy).
     seed_on_start: bool = False
+    # Drop all tables and re-seed demo data on boot (used to refresh demo data).
+    seed_reset: bool = False
 
     # SMTP for email OTP delivery. Leave smtp_host empty to print OTPs to console (dev).
     smtp_host: str = ""

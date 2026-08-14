@@ -65,8 +65,8 @@ export default function Discover() {
 
       <div className="card mb-16" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>
         <div className="field">
-          <label>Area</label>
-          <input className="input" placeholder="e.g. Koramangala" value={filters.area}
+          <label>Location (any city / area)</label>
+          <input className="input" placeholder="e.g. Delhi, Hyderabad, Koramangala" value={filters.area}
                  onChange={(e) => setFilters({ ...filters, area: e.target.value })} />
         </div>
         <div className="field">
