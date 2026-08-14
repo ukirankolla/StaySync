@@ -22,6 +22,12 @@ MODEL_README = (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    if settings.seed_on_start:
+        try:
+            from scripts.seed import seed
+            seed()
+        except Exception as exc:  # noqa: BLE001
+            print(f"[StaySync] Seed on start failed: {exc}")
     if not ml_model.model_available():
         if settings.env == "production":
             print("[StaySync] Training ML model on boot…")

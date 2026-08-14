@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     # Absolute base URL of this API, set in production so uploaded photos resolve
     # from any host (e.g. https://backend.up.railway.app).
     public_base_url: str = ""
+    # Seed demo data on boot when the database is empty (used on first deploy).
+    seed_on_start: bool = False
 
     # SMTP for email OTP delivery. Leave smtp_host empty to print OTPs to console (dev).
     smtp_host: str = ""
