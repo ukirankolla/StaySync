@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60 * 24 * 7
     otp_expire_minutes: int = 10
     otp_secret_salt: str = "staysync-otp"
-    cors_origins: str = "http://localhost:5173,http://localhost:3000"
+    cors_origins: str = "http://localhost:5173,http://localhost:3000,https://staysync.vercel.app"
     env: str = "development"
     # Absolute base URL of this API, set in production so uploaded photos resolve
     # from any host (e.g. https://backend.up.railway.app).
