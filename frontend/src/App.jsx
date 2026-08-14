@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Navbar from './components/Navbar'
 import MessageToasts from './components/MessageToasts'
+import InstallApp from './components/InstallApp'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -56,6 +57,7 @@ export default function App() {
         </Routes>
       </main>
       <MessageToasts />
+      <InstallApp />
     </div>
   )
 }

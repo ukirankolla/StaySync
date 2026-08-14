@@ -216,6 +216,16 @@ h1, h2, h3 { line-height: 1.2; }
 }
 .toast b { color: #fff; }
 
+/* ---------- install app bar ---------- */
+.install-bar {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  z-index: 190; display: flex; align-items: center; gap: 12px;
+  background: #fff; border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: var(--shadow); padding: 10px 16px; max-width: calc(100% - 32px);
+  font-size: .9rem;
+}
+.install-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 @media (max-width: 720px) {
   .hero h1 { font-size: 2rem; }
   .chat-layout { grid-template-columns: 1fr; height: auto; }
