@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api/client'
 
-const CITIES = ['Bengaluru', 'Mumbai', 'Delhi', 'Pune', 'Hyderabad', 'Chennai', 'Kolkata']
-
 export default function Groups() {
   const [groups, setGroups] = useState([])
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ name: '', city: 'Bengaluru', target_area: '', budget_min: '', budget_max: '' })
+  const [form, setForm] = useState({ name: '', city: '', target_area: '', budget_min: '', budget_max: '' })
   const [invite, setInvite] = useState('')
   const [err, setErr] = useState('')
   const [notice, setNotice] = useState('')
@@ -24,7 +22,7 @@ export default function Groups() {
         budget_max: form.budget_max === '' ? null : Number(form.budget_max),
       }
       await api('/groups', { method: 'POST', body: payload })
-      setForm({ name: '', city: 'Bengaluru', target_area: '', budget_min: '', budget_max: '' })
+      setForm({ name: '', city: '', target_area: '', budget_min: '', budget_max: '' })
       setShowForm(false)
       load()
     } catch (e2) { setErr(e2.message) }
@@ -63,9 +61,8 @@ export default function Groups() {
             </div>
             <div className="field">
               <label>City</label>
-              <select className="select" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}>
-                {CITIES.map((c) => <option key={c}>{c}</option>)}
-              </select>
+              <input className="input" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}
+                     placeholder="Any city — e.g. Bengaluru, London, New York" required />
             </div>
           </div>
           <div className="form-row mb-8">

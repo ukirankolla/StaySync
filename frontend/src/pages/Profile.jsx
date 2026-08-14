@@ -4,7 +4,6 @@ import { api } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 
 const OCCUPATIONS = ['student', 'professional', 'other']
-const CITIES = ['Bengaluru', 'Mumbai', 'Delhi', 'Pune', 'Hyderabad', 'Chennai', 'Kolkata']
 const PRIVACY_FIELDS = [
   ['age', 'my age'],
   ['occupation', 'my occupation'],
@@ -19,7 +18,7 @@ export default function Profile() {
   const navigate = useNavigate()
   const [form, setForm] = useState({
     full_name: '', age: '', occupation: 'student', occupation_detail: '',
-    city: 'Bengaluru', preferred_area: '', budget_min: '', budget_max: '',
+    city: '', preferred_area: '', budget_min: '', budget_max: '',
     move_in_date: '', bio: '', is_visible: true, photos: [],
     privacy: {},
   })
@@ -40,7 +39,7 @@ export default function Profile() {
     api('/profile/me').then((p) => {
       setForm({
         full_name: p.full_name || '', age: p.age || '', occupation: p.occupation || 'student',
-        occupation_detail: p.occupation_detail || '', city: p.city || 'Bengaluru',
+        occupation_detail: p.occupation_detail || '', city: p.city || '',
         preferred_area: p.preferred_area || '', budget_min: p.budget_min || '',
         budget_max: p.budget_max || '', move_in_date: p.move_in_date || '',
         bio: p.bio || '', is_visible: p.is_visible, photos: p.photos || [],
@@ -208,10 +207,9 @@ export default function Profile() {
 
         <div className="form-row">
           <div className="field">
-            <label>City</label>
-            <select className="select" value={form.city} onChange={set('city')}>
-              {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <label>City / State / Country</label>
+            <input className="input" value={form.city} onChange={set('city')}
+                   placeholder="Anywhere — e.g. Bengaluru, London, New York" />
           </div>
           <div className="field">
             <label>Preferred area</label>

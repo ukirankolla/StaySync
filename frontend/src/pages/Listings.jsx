@@ -3,8 +3,6 @@ import { api } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import ProfileModal from '../components/ProfileModal'
 
-const CITIES = ['Bengaluru', 'Mumbai', 'Delhi', 'Pune', 'Hyderabad', 'Chennai', 'Kolkata']
-
 export default function Listings() {
   const { user } = useAuth()
   const [listings, setListings] = useState([])
@@ -12,7 +10,7 @@ export default function Listings() {
   const [filters, setFilters] = useState({ city: '', maxRent: '' })
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({
-    title: '', description: '', city: 'Bengaluru', area: '', rent: '', deposit: '',
+    title: '', description: '', city: '', area: '', rent: '', deposit: '',
     room_type: 'private', bhk: '', amenities: '', available_from: '', looking_for: '',
     photos: [],
   })
@@ -33,7 +31,7 @@ export default function Listings() {
   const loadMine = () => api('/listings/mine').then(setMine).catch(() => {})
   useEffect(() => { loadMine() }, [])
 
-  const emptyForm = { title: '', description: '', city: 'Bengaluru', area: '', rent: '', deposit: '', room_type: 'private', bhk: '', amenities: '', available_from: '', looking_for: '', photos: [] }
+  const emptyForm = { title: '', description: '', city: '', area: '', rent: '', deposit: '', room_type: 'private', bhk: '', amenities: '', available_from: '', looking_for: '', photos: [] }
 
   const startEdit = (l) => {
     setForm({
@@ -147,10 +145,8 @@ export default function Listings() {
       <div className="card mt-16 mb-16" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>
         <div className="field">
           <label>City</label>
-          <select className="select" value={filters.city} onChange={(e) => setFilters({ ...filters, city: e.target.value })}>
-            <option value="">All cities</option>
-            {CITIES.map((c) => <option key={c}>{c}</option>)}
-          </select>
+          <input className="input" value={filters.city} onChange={(e) => setFilters({ ...filters, city: e.target.value })}
+                 placeholder="Any city — e.g. Delhi, London, New York" />
         </div>
         <div className="field">
           <label>Max rent (₹/mo)</label>
@@ -178,9 +174,8 @@ export default function Listings() {
           <div className="form-row mt-8">
             <div className="field">
               <label>City</label>
-              <select className="select" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}>
-                {CITIES.map((c) => <option key={c}>{c}</option>)}
-              </select>
+              <input className="input" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}
+                     placeholder="Any city — e.g. Bengaluru, London, New York" required />
             </div>
             <div className="field">
               <label>Area</label>
