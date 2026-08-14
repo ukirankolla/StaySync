@@ -29,14 +29,13 @@ async def lifespan(app: FastAPI):
         except Exception as exc:  # noqa: BLE001
             print(f"[StaySync] Seed on start failed: {exc}")
     if not ml_model.model_available():
-        if settings.env == "production":
-            print("[StaySync] Training ML model on boot…")
-            try:
-                print(ml_model.train())
-            except Exception as exc:  # noqa: BLE001
-                print(f"[StaySync] ML training failed: {exc}")
-        else:
-            print(f"[StaySync] ML model missing: {MODEL_README}")
+        print("[StaySync] Training ML model on boot…")
+        try:
+            print(ml_model.train())
+        except Exception as exc:  # noqa: BLE001
+            print(f"[StaySync] ML training failed: {exc}")
+        if not ml_model.model_available():
+            print(f"[StaySync] ML model still unavailable: {MODEL_README}")
     yield
 
 
