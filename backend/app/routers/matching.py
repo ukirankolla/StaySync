@@ -158,12 +158,16 @@ def my_connections(user: User = Depends(get_current_user), db: Session = Depends
             continue
         peer_profile = db.query(Profile).filter(Profile.user_id == peer_id).first()
         last = db.query(Message).filter(Message.connection_id == c.id).order_by(Message.created_at.desc()).first()
+        unread = db.query(Message).filter(
+            Message.connection_id == c.id, Message.sender_id != user.id, Message.is_read.is_(False)
+        ).count()
         out.append(ConnectionOut(
             id=c.id,
             peer_id=peer_id,
             peer_name=peer_profile.full_name if peer_profile else "User",
             status=c.status,
             last_message=last.content if last else None,
+            unread_count=unread,
             created_at=c.created_at,
         ))
     return out

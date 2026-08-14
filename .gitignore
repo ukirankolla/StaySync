@@ -9,6 +9,9 @@ env/
 *.sqlite3
 *.joblib
 
+# User uploads
+backend/uploads/
+
 # Node
 node_modules/
 dist/

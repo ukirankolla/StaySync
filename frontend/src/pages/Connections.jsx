@@ -34,6 +34,7 @@ export default function Connections() {
       <div>
         <strong>{c.peer_name}</strong>
         <span className={`status-pill status-${c.status}`} style={{ marginLeft: 8 }}>{c.status}</span>
+        {c.unread_count > 0 && <span className="badge" style={{ marginLeft: 8, background: 'var(--danger)' }}>{c.unread_count} new</span>}
         <div className="muted" style={{ fontSize: '.85rem' }}>{c.last_message || (c.status === 'accepted' ? 'Start chatting!' : '')}</div>
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
