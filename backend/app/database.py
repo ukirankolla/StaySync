@@ -15,6 +15,8 @@ elif database_url.startswith("postgresql://"):
 connect_args = {}
 if database_url.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
+else:
+    connect_args = {"connect_timeout": 15}
 
 engine = create_engine(database_url, connect_args=connect_args, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

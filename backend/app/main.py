@@ -21,7 +21,11 @@ MODEL_README = (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("[StaySync] Database ready")
+    except Exception as exc:  # noqa: BLE001
+        print(f"[StaySync] DATABASE STARTUP FAILED: {exc}")
     if settings.seed_on_start:
         try:
             from scripts.seed import seed
