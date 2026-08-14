@@ -1,5 +1,7 @@
 const TOKEN_KEY = 'staysync_token'
 
+export const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY)
 }
@@ -20,7 +22,7 @@ export async function api(path, { method = 'GET', body, headers = {} } = {}) {
   }
   if (body !== undefined) opts.body = JSON.stringify(body)
 
-  const res = await fetch(`/api${path}`, opts)
+  const res = await fetch(`${API_BASE}/api${path}`, opts)
   const data = await res.json().catch(() => null)
   if (!res.ok) {
     const err = new Error(data?.detail || `Request failed (${res.status})`)
@@ -32,7 +34,12 @@ export async function api(path, { method = 'GET', body, headers = {} } = {}) {
 }
 
 export function wsUrl() {
-  const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
   const token = getToken()
-  return `${proto}://${window.location.host}/api/chat/ws?token=${encodeURIComponent(token || '')}`
+  const query = `?token=${encodeURIComponent(token || '')}`
+  if (API_BASE) {
+    const wsBase = API_BASE.replace(/^http/, 'ws')
+    return `${wsBase}/api/chat/ws${query}`
+  }
+  const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
+  return `${proto}://${window.location.host}/api/chat/ws${query}`
 }

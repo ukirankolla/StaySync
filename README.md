@@ -50,6 +50,47 @@ npm run dev
 
 Open http://localhost:5173 — the dev server proxies `/api` (including WebSockets) to the backend.
 
+## Deploy
+
+The app is built to run as three pieces: **Vercel** (website), **Railway** (FastAPI backend — needs a persistent server for WebSockets), and **Supabase** (Postgres + Storage).
+
+### 1. Supabase (database + image storage)
+
+1. Create a project at [supabase.com](https://supabase.com).
+2. In **Project Settings → Database → Connection string**, copy the pooler/URI (format `postgresql://…`). Keep the password handy.
+3. In **Storage**, create a public bucket named `staysync`.
+
+### 2. Railway (backend)
+
+1. Push this repo to GitHub, then create a new project on [railway.app](https://railway.app) → **Deploy from GitHub**.
+2. Railway auto-detects `backend/railway.json` + `backend/Dockerfile`.
+3. Add environment variables (Project → Variables):
+   - `ENV=production`
+   - `PUBLIC_BASE_URL=https://<your-backend>.up.railway.app`
+   - `DATABASE_URL=<your Supabase postgres connection string>`
+   - `JWT_SECRET=<long random string>`
+   - `CORS_ORIGINS=https://<your-frontend>.vercel.app`
+   - `STORAGE_BACKEND=supabase`
+   - `SUPABASE_URL=https://<project>.supabase.co`
+   - `SUPABASE_SERVICE_KEY=<service role key>`
+   - `SUPABASE_STORAGE_BUCKET=staysync`
+   - (Optional) `SMTP_HOST`/`SMTP_USER`/`SMTP_PASSWORD` to email OTPs; otherwise codes print to logs.
+4. Railway runs `uvicorn app.main:app` on `$PORT`; the ML model auto-trains on first boot.
+5. Seed the production database once (via Railway's CLI shell, from `/app`):
+   `python scripts/seed.py`
+
+### 3. Vercel (frontend)
+
+1. On [vercel.com](https://vercel.com), import the repo → framework **Vite** (uses `frontend/vercel.json`).
+2. Set build env var (Project → Settings → Environment Variables):
+   - `VITE_API_URL=https://<your-backend>.up.railway.app`
+3. Deploy. `frontend/vercel.json` rewrites all routes to the SPA.
+
+### 4. Domain + Google
+
+- Add a custom domain in Vercel (e.g. `staysync.app`) and HTTPS is automatic.
+- Register the domain in [Google Search Console](https://search.google.com/search-console) and submit the sitemap/URL so it appears in search (takes days–weeks).
+
 ## Demo accounts
 
 | Role  | Email              | Password |
@@ -118,7 +159,8 @@ frontend/
 
 ## Production notes
 
-- Set `JWT_SECRET`, `DATABASE_URL` (PostgreSQL) and `CORS_ORIGINS` in `backend/.env`.
-- Replace console-printed OTPs with an SMS/email provider in `app/routers/auth.py`.
+- Set `JWT_SECRET`, `DATABASE_URL` (PostgreSQL), `PUBLIC_BASE_URL`, and `CORS_ORIGINS` in `backend/.env` (see `backend/.env.example`).
+- Uploads: `STORAGE_BACKEND=supabase` stores photos in Supabase Storage; `local` writes to `./uploads` (works on Railway only if you attach a volume).
+- Replace console-printed OTPs with an SMS/email provider in `app/services/notify.py` (SMTP is supported via env vars).
 - Swap the in-memory `ChatManager` for a Redis pub/sub layer before running multiple workers.
 - Train the ML model on real labelled interactions once you have engagement data.

@@ -23,7 +23,14 @@ MODEL_README = (
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     if not ml_model.model_available():
-        print(f"[StaySync] ML model missing: {MODEL_README}")
+        if settings.env == "production":
+            print("[StaySync] Training ML model on boot…")
+            try:
+                print(ml_model.train())
+            except Exception as exc:  # noqa: BLE001
+                print(f"[StaySync] ML training failed: {exc}")
+        else:
+            print(f"[StaySync] ML model missing: {MODEL_README}")
     yield
 
 
@@ -45,8 +52,9 @@ app.add_middleware(
 for r in (auth, profile, matching, chat, groups, listings, moderation, admin, ml, uploads):
     app.include_router(r.router, prefix=settings.api_prefix)
 
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+if settings.storage_backend == "local":
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 @app.get("/")

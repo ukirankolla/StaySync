@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     otp_secret_salt: str = "staysync-otp"
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
     env: str = "development"
+    # Absolute base URL of this API, set in production so uploaded photos resolve
+    # from any host (e.g. https://backend.up.railway.app).
+    public_base_url: str = ""
 
     # SMTP for email OTP delivery. Leave smtp_host empty to print OTPs to console (dev).
     smtp_host: str = ""
@@ -22,6 +25,13 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     mail_from: str = "StaySync <no-reply@staysync.local>"
     smtp_use_tls: bool = True
+
+    # Upload storage. "local" writes to ./uploads on disk; "supabase" uploads to
+    # Supabase Storage. Set supabase_url + supabase_service_key to enable supabase.
+    storage_backend: str = "local"
+    supabase_url: str = ""
+    supabase_service_key: str = ""
+    supabase_storage_bucket: str = "staysync"
 
     @property
     def cors_origin_list(self) -> list[str]:
