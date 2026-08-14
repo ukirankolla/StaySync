@@ -1,12 +1,17 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .database import Base, engine
-from .routers import admin, auth, chat, groups, listings, matching, ml, moderation, profile
+from .routers import admin, auth, chat, groups, listings, matching, ml, moderation, profile, uploads
 from .services import ml_model
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+UPLOAD_DIR = BASE_DIR / "uploads"
 
 MODEL_README = (
     "The ML model is not trained yet. Run `python scripts/train_model.py` "
@@ -37,8 +42,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for r in (auth, profile, matching, chat, groups, listings, moderation, admin, ml):
+for r in (auth, profile, matching, chat, groups, listings, moderation, admin, ml, uploads):
     app.include_router(r.router, prefix=settings.api_prefix)
+
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 @app.get("/")

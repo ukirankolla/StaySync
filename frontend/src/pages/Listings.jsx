@@ -13,7 +13,10 @@ export default function Listings() {
   const [form, setForm] = useState({
     title: '', description: '', city: 'Bengaluru', area: '', rent: '', deposit: '',
     room_type: 'private', bhk: '', amenities: '', available_from: '', looking_for: '',
+    photos: [],
   })
+  const [uploading, setUploading] = useState(false)
+  const [contacting, setContacting] = useState(null)
   const [err, setErr] = useState('')
   const [notice, setNotice] = useState('')
 
@@ -38,13 +41,53 @@ export default function Listings() {
         room_type: form.room_type, bhk: form.bhk || null,
         amenities: form.amenities.split(',').map((a) => a.trim()).filter(Boolean),
         available_from: form.available_from || null, looking_for: form.looking_for === '' ? null : Number(form.looking_for),
+        photos: form.photos,
       }
       await api('/listings', { method: 'POST', body: payload })
+      setForm({ title: '', description: '', city: 'Bengaluru', area: '', rent: '', deposit: '', room_type: 'private', bhk: '', amenities: '', available_from: '', looking_for: '', photos: [] })
       setShowForm(false)
       setNotice('Listing submitted for review.')
       setTimeout(() => setNotice(''), 4000)
       api('/listings/mine').then(setMine).catch(() => {})
     } catch (e2) { setErr(e2.message) }
+  }
+
+  const uploadPhoto = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    setErr('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload/image', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('staysync_token')}` },
+        body: fd,
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.detail || 'Upload failed')
+      setForm((f) => ({ ...f, photos: [...f.photos, data.url] }))
+    } catch (e2) { setErr(e2.message) } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  const removePhoto = (url) => setForm((f) => ({ ...f, photos: f.photos.filter((p) => p !== url) }))
+
+  const contact = async (l) => {
+    setContacting(l.id)
+    setErr('')
+    try {
+      const res = await api(`/listings/${l.id}/contact`, { method: 'POST' })
+      if (res.status === 'accepted') {
+        window.location.href = `/chat/${res.connection_id}`
+      } else {
+        setNotice('Request sent to the owner. Once they accept, you can chat about the flat.')
+        setTimeout(() => setNotice(''), 5000)
+      }
+    } catch (e) { setErr(e.message) } finally { setContacting(null) }
   }
 
   const report = async (l) => {
@@ -141,6 +184,25 @@ export default function Listings() {
             <input className="input" type="date" value={form.available_from} onChange={(e) => setForm({ ...form, available_from: e.target.value })} />
           </div>
           <div className="field mt-8">
+            <label>Photos</label>
+            {form.photos.length > 0 && (
+              <div className="photo-strip mb-8">
+                {form.photos.map((p) => (
+                  <div key={p} style={{ position: 'relative' }}>
+                    <img src={p} alt="" className="photo-thumb photo-thumb-lg" />
+                    <button type="button" onClick={() => removePhoto(p)}
+                            style={{ position: 'absolute', top: -6, right: -6, borderRadius: '50%', background: 'var(--danger)', color: '#fff', border: 'none', width: 20, height: 20, cursor: 'pointer' }}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="photo-upload">
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadPhoto}
+                     disabled={uploading} className="input" style={{ width: 'auto' }} />
+              {uploading && <span className="muted">Uploading…</span>}
+            </div>
+          </div>
+          <div className="field mt-8">
             <label>Description</label>
             <textarea className="input" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           </div>
@@ -166,13 +228,23 @@ export default function Listings() {
                 {l.is_verified && <span className="chip chip-green">verified</span>}
               </div>
               {l.description && <p className="muted mt-8" style={{ fontSize: '.9rem' }}>{l.description}</p>}
+              {l.photos?.length > 0 && (
+                <div className="photo-strip mt-8">
+                  {l.photos.slice(0, 4).map((p) => <img key={p} src={p} alt="" className="photo-thumb" />)}
+                </div>
+              )}
               <div className="mt-8" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {l.amenities.map((a) => <span key={a} className="chip chip-gray">{a}</span>)}
               </div>
               {l.available_from && <p className="muted mt-8" style={{ fontSize: '.82rem' }}>Available from {l.available_from}</p>}
-              <div className="mt-8">
+              <div className="mt-8" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {l.owner_id !== user.id && (
-                  <button className="btn btn-ghost btn-sm" onClick={() => report(l)}>Report</button>
+                  <>
+                    <button className="btn btn-primary btn-sm" disabled={contacting === l.id} onClick={() => contact(l)}>
+                      {contacting === l.id ? 'Sending…' : 'Contact owner'}
+                    </button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => report(l)}>Report</button>
+                  </>
                 )}
               </div>
             </div>

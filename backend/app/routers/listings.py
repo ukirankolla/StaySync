@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_user
-from ..models import Listing, User
+from ..models import Connection, Listing, User
 from ..schemas import ListingCreate, ListingOut, ListingUpdate
 from ..services.agents import get_agent
 from ..services.events import track
@@ -74,3 +74,27 @@ def delete_listing(listing_id: int, user: User = Depends(get_current_user), db: 
     listing.is_active = False
     db.commit()
     return {"ok": True}
+
+
+@router.post("/{listing_id}/contact")
+def contact_owner(listing_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Send a connection request to a listing owner so you can chat about the flat."""
+    listing = db.get(Listing, listing_id)
+    if not listing or not listing.is_active or listing.status != "approved":
+        raise HTTPException(status_code=404, detail="Listing not found")
+    if listing.owner_id == user.id:
+        raise HTTPException(status_code=400, detail="This is your own listing")
+
+    existing = db.query(Connection).filter(
+        ((Connection.requester_id == user.id) & (Connection.recipient_id == listing.owner_id))
+        | ((Connection.recipient_id == user.id) & (Connection.requester_id == listing.owner_id))
+    ).first()
+    if existing:
+        return {"connection_id": existing.id, "status": existing.status}
+
+    conn = Connection(requester_id=user.id, recipient_id=listing.owner_id, status="pending")
+    db.add(conn)
+    db.commit()
+    db.refresh(conn)
+    track(db, user.id, "listing_contact", {"listing_id": listing_id, "owner_id": listing.owner_id})
+    return {"connection_id": conn.id, "status": conn.status}

@@ -1,9 +1,7 @@
 import React, { useState } from 'react'
 import { api } from '../api/client'
-import { useNavigate } from 'react-router-dom'
 
-export default function MatchCard({ match, onAction }) {
-  const navigate = useNavigate()
+export default function MatchCard({ match, onAction, onViewProfile }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
 
@@ -79,7 +77,7 @@ export default function MatchCard({ match, onAction }) {
         <button className="btn btn-primary btn-sm" disabled={busy} onClick={connect}>
           {busy ? 'Connecting…' : 'Connect'}
         </button>
-        <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/chat/new`)} disabled>View profile</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => onViewProfile?.(match.user_id)}>View profile</button>
         <button className="btn btn-ghost btn-sm" onClick={report} title="Report">Report</button>
         <button className="btn btn-ghost btn-sm" onClick={block} title="Block">Block</button>
       </div>

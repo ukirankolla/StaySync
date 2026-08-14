@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import MatchCard from '../components/MatchCard'
+import ProfileModal from '../components/ProfileModal'
 
 export default function Discover() {
   const [matches, setMatches] = useState([])
@@ -10,6 +11,7 @@ export default function Discover() {
   const [notice, setNotice] = useState('')
   const [blocked, setBlocked] = useState(new Set())
   const [connected, setConnected] = useState(new Set())
+  const [viewing, setViewing] = useState(null)
 
   useEffect(() => {
     api('/matching/recommendations')
@@ -62,9 +64,20 @@ export default function Discover() {
       ) : (
         <div className="grid grid-2">
           {visible.map((m) => (
-            <MatchCard key={m.user_id} match={m} onAction={handleAction} />
+            <MatchCard key={m.user_id} match={m} onAction={handleAction} onViewProfile={setViewing} />
           ))}
         </div>
+      )}
+
+      {viewing && (
+        <ProfileModal
+          userId={viewing}
+          onClose={() => setViewing(null)}
+          onConnected={(type, id) => {
+            setViewing(null)
+            handleAction(type || 'connected', id || viewing)
+          }}
+        />
       )}
     </div>
   )

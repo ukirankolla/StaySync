@@ -18,6 +18,7 @@ export default function Profile() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState(null)
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     api('/profile/me').then((p) => {
@@ -26,7 +27,7 @@ export default function Profile() {
         occupation_detail: p.occupation_detail || '', city: p.city || 'Bengaluru',
         preferred_area: p.preferred_area || '', budget_min: p.budget_min || '',
         budget_max: p.budget_max || '', move_in_date: p.move_in_date || '',
-        bio: p.bio || '', is_visible: p.is_visible,
+        bio: p.bio || '', is_visible: p.is_visible, photos: p.photos || [],
       })
     }).catch(() => {})
     api('/matching/agents/onboarding').then(setProgress).catch(() => {})
@@ -34,6 +35,32 @@ export default function Profile() {
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
   const setNum = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value === '' ? '' : Number(e.target.value) }))
+
+  const uploadPhoto = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    setError('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload/image', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('staysync_token')}` },
+        body: fd,
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.detail || 'Upload failed')
+      setForm((f) => ({ ...f, photos: [...(f.photos || []), data.url] }))
+    } catch (err2) {
+      setError(err2.message)
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  const removePhoto = (url) => setForm((f) => ({ ...f, photos: (f.photos || []).filter((p) => p !== url) }))
 
   const submit = async (e) => {
     e.preventDefault()
@@ -47,6 +74,7 @@ export default function Profile() {
         budget_min: form.budget_min === '' ? null : Number(form.budget_min),
         budget_max: form.budget_max === '' ? null : Number(form.budget_max),
         move_in_date: form.move_in_date, bio: form.bio, is_visible: form.is_visible,
+        photos: form.photos || [],
       }
       await api('/profile/me', { method: 'PUT', body: payload })
       setSaved(true)
@@ -134,6 +162,26 @@ export default function Profile() {
           <label>About you</label>
           <textarea className="input" rows={3} value={form.bio} onChange={set('bio')}
                     placeholder="Short intro — routines, interests, what you're looking for" />
+        </div>
+
+        <div className="field">
+          <label>Photos</label>
+          {form.photos?.length > 0 && (
+            <div className="photo-strip mb-8">
+              {form.photos.map((p) => (
+                <div key={p} style={{ position: 'relative' }}>
+                  <img src={p} alt="" className="photo-thumb" />
+                  <button type="button" onClick={() => removePhoto(p)}
+                          style={{ position: 'absolute', top: -6, right: -6, borderRadius: '50%', background: 'var(--danger)', color: '#fff', border: 'none', width: 20, height: 20, cursor: 'pointer' }}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="photo-upload">
+            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadPhoto}
+                   disabled={uploading} className="input" style={{ width: 'auto' }} />
+            {uploading && <span className="muted">Uploading…</span>}
+          </div>
         </div>
 
         <label className="form-note" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

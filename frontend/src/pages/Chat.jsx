@@ -31,6 +31,7 @@ export default function Chat() {
           if (m.some((x) => x.id === msg.data.id)) return m
           return [...m, msg.data]
         })
+        api('/matching/connections').then(setConns).catch(() => {})
       }
     }
     return () => ws.close()
@@ -68,7 +69,11 @@ export default function Chat() {
           <div key={c.id}
                className={`conn-item ${String(c.id) === String(connectionId) ? 'active' : ''}`}
                onClick={() => navigate(`/chat/${c.id}`)}>
-            <strong>{c.peer_name}</strong>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <strong>{c.peer_name}</strong>
+              {String(c.id) !== String(connectionId) && c.unread_count > 0 &&
+                <span className="badge" style={{ background: 'var(--danger)' }}>{c.unread_count}</span>}
+            </div>
             <div className="muted" style={{ fontSize: '.82rem' }}>{c.last_message || 'Start chatting'}</div>
           </div>
         ))}
