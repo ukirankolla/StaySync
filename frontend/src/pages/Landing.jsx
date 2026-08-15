@@ -1,8 +1,23 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { IMG, HERO_PROMPTS, PORTRAITS } from '../lib/images'
+import { IMG, HERO_PROMPTS } from '../lib/images'
 import AiImage from '../components/AiImage'
+
+const STEPS = [
+  { title: 'Create your profile', text: 'Tell us who you are, your city, and your budget.',
+    prompt: 'young Indian professional smiling, setting up a profile on a laptop in a bright modern home office',
+    fallback: IMG.plan, seed: 11 },
+  { title: 'Answer the lifestyle questionnaire', text: 'Sleep, cleanliness, routine — the things that actually matter.',
+    prompt: 'person answering a lifestyle questionnaire on a smartphone app, cozy sunlit bedroom, plants',
+    fallback: IMG.office, seed: 12 },
+  { title: 'Match & chat with compatible people', text: 'See transparent compatibility scores with reasons.',
+    prompt: 'two young roommates laughing over chai at a modern cafe, warm candid photo',
+    fallback: IMG.friends, seed: 13 },
+  { title: 'Form a group and find a flat', text: 'Hunt for a verified listing together.',
+    prompt: 'group of friends walking through a bright empty apartment together holding keys, excited',
+    fallback: IMG.home, seed: 14 },
+]
 
 const FEATURES = [
   { title: 'Compatibility scoring', text: 'Transparent lifestyle, budget, and routine matching with clear reasons — not a mystery number.', img: IMG.team },
@@ -11,13 +26,6 @@ const FEATURES = [
   { title: 'Flat listings', text: 'Browse verified room and flat listings that fit your group’s budget and area.', img: IMG.home },
   { title: 'Safety tools', text: 'Report, block, and moderation reviews keep the community safe.', img: IMG.crowd },
   { title: 'Smarter matches', text: 'Ranking that learns and refines itself as the community grows.', img: IMG.office },
-]
-
-const STEPS = [
-  { title: 'Create your profile', text: 'Tell us who you are, your city, and your budget.', img: PORTRAITS[1] },
-  { title: 'Answer the lifestyle questionnaire', text: 'Sleep, cleanliness, routine — the things that actually matter.', img: IMG.plan },
-  { title: 'Match & chat with compatible people', text: 'See transparent compatibility scores with reasons.', img: IMG.friends },
-  { title: 'Form a group and find a flat', text: 'Hunt for a verified listing together.', img: IMG.home },
 ]
 
 export default function Landing() {
@@ -69,7 +77,7 @@ export default function Landing() {
       <div className="grid grid-3 steps-grid">
         {STEPS.map((s, i) => (
           <div className="card step-card" key={s.title}>
-            <img className="card-img" src={s.img} alt="" loading="lazy" />
+            <AiImage className="card-img" prompt={s.prompt} seed={s.seed} fallback={s.fallback} alt={s.title} />
             <div className="step-num">{i + 1}</div>
             <h3>{s.title}</h3>
             <p>{s.text}</p>
