@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { IMG, PORTRAITS } from '../lib/images'
+import { IMG, HERO_PROMPTS, PORTRAITS } from '../lib/images'
+import AiImage from '../components/AiImage'
 
 const FEATURES = [
   { title: 'Compatibility scoring', text: 'Transparent lifestyle, budget, and routine matching with clear reasons — not a mystery number.', img: IMG.team },
@@ -21,10 +22,25 @@ const STEPS = [
 
 export default function Landing() {
   const { user } = useAuth()
+  const [heroIdx, setHeroIdx] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => setHeroIdx((i) => (i + 1) % HERO_PROMPTS.length), 8000)
+    return () => clearInterval(t)
+  }, [])
+
   return (
     <div>
       <section className="hero">
-        <img className="hero-bg" src={IMG.hero} alt="" />
+        <AiImage
+          className="hero-bg hero-fade"
+          key={heroIdx}
+          prompt={HERO_PROMPTS[heroIdx]}
+          seed={heroIdx + 1}
+          w={1800}
+          h={900}
+          fallback={IMG.hero}
+          alt=""
+        />
         <div className="hero-inner">
           <span className="hero-eyebrow">Roommate + flat matching, done right</span>
           <h1>Find compatible roommates before you move</h1>

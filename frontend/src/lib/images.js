@@ -71,3 +71,33 @@ export function initials(name = 'U') {
     .join('')
     .toUpperCase()
 }
+
+export function hashSeed(str = '') {
+  let h = 0
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0
+  return h
+}
+
+const AI_MODEL = 'flux'
+
+export function aiImage(prompt, { w = 900, h = 600, seed = 1 } = {}) {
+  const p = encodeURIComponent(`${prompt}, photorealistic, high detail, natural light`)
+  return `https://image.pollinations.ai/prompt/${p}?width=${w}&height=${h}&seed=${seed}&nologo=true&model=${AI_MODEL}`
+}
+
+export function listingPrompt(l) {
+  const room = { private: 'private room', shared: 'shared room', whole: 'whole flat apartment' }[l.room_type] || 'room'
+  const parts = [
+    `photorealistic ${room} interior in ${l.city || 'India'}`,
+    l.area ? `in ${l.area}` : '',
+    l.bhk || '',
+    'bright natural light, modern tasteful furniture, clean, wide angle real estate photo',
+  ]
+  return parts.filter(Boolean).join(', ')
+}
+
+export const HERO_PROMPTS = [
+  'bright modern co-living apartment living room in India, young professionals relaxing, warm sunlight',
+  'cozy furnished bedroom with study desk in a shared flat, warm evening light',
+  'friends having chai on a balcony of an Indian apartment, city skyline sunset',
+]
