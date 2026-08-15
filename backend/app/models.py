@@ -37,6 +37,9 @@ class User(Base):
                                                      cascade="all, delete-orphan")
     questionnaire: Mapped["Questionnaire | None"] = relationship(back_populates="user", uselist=False,
                                                                  cascade="all, delete-orphan")
+    verifications: Mapped[list["Verification"]] = relationship(back_populates="user",
+                                                               foreign_keys="Verification.user_id",
+                                                               cascade="all, delete-orphan")
 
 
 class Profile(Base):
@@ -55,6 +58,7 @@ class Profile(Base):
     move_in_date: Mapped[str | None] = mapped_column(String(32), nullable=True)
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_id_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     is_visible: Mapped[bool] = mapped_column(Boolean, default=True)
     photos: Mapped[list] = mapped_column(JSON, default=list)
     privacy: Mapped[dict] = mapped_column(JSON, default=dict)
@@ -185,6 +189,23 @@ class OtpCode(Base):
     is_used: Mapped[bool] = mapped_column(Boolean, default=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class Verification(Base):
+    __tablename__ = "verifications"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    id_type: Mapped[str] = mapped_column(String(32))  # passport | driving_license | national_id | student_id | other
+    id_number: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    document_url: Mapped[str] = mapped_column(String(500))
+    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending | approved | rejected
+    admin_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+
+    user: Mapped[User] = relationship(back_populates="verifications", foreign_keys=[user_id])
 
 
 class Event(Base):

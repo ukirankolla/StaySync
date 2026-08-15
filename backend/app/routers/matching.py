@@ -59,6 +59,7 @@ def _to_match_result(peer: User, qa: Questionnaire | None, qb: Questionnaire | N
         bio=pb.bio,
         photos=pb.photos if pb else [],
         is_verified=pb.is_verified if pb else False,
+        is_id_verified=pb.is_id_verified if pb else False,
         score=result["score"],
         ml_score=round(ml * 100, 1) if ml is not None else None,
         category_scores=result["category_scores"],
@@ -68,7 +69,8 @@ def _to_match_result(peer: User, qa: Questionnaire | None, qb: Questionnaire | N
 
 @router.get("/recommendations", response_model=list[MatchResult])
 def recommendations(user: User = Depends(get_current_user), db: Session = Depends(get_db),
-                    area: str | None = None, city: str | None = None, max_budget: int | None = None):
+                    area: str | None = None, city: str | None = None, max_budget: int | None = None,
+                    verified_only: bool = False):
     profile = db.query(Profile).filter(Profile.user_id == user.id).first()
     mine_q = db.query(Questionnaire).filter(Questionnaire.user_id == user.id).first()
 
@@ -95,6 +97,8 @@ def recommendations(user: User = Depends(get_current_user), db: Session = Depend
         query = query.where(or_(Profile.preferred_area.ilike(like), Profile.city.ilike(like)))
     if max_budget:
         query = query.where(Profile.budget_min <= max_budget)
+    if verified_only:
+        query = query.where(Profile.is_id_verified.is_(True))
 
     results: list[MatchResult] = []
     for peer in db.scalars(query).all():

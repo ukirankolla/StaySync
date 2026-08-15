@@ -6,8 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .config import settings
-from .database import Base, engine
-from .routers import admin, auth, chat, groups, listings, matching, ml, moderation, profile, uploads
+from .database import Base, engine, ensure_schema
+from .routers import admin, auth, chat, groups, listings, matching, ml, moderation, profile, uploads, verification
 from .services import ml_model
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,7 +22,7 @@ MODEL_README = (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
-        Base.metadata.create_all(bind=engine)
+        ensure_schema()
         print("[StaySync] Database ready")
     except Exception as exc:  # noqa: BLE001
         print(f"[StaySync] DATABASE STARTUP FAILED: {exc}")
@@ -69,7 +69,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for r in (auth, profile, matching, chat, groups, listings, moderation, admin, ml, uploads):
+for r in (auth, profile, matching, chat, groups, listings, moderation, admin, ml, uploads, verification):
     app.include_router(r.router, prefix=settings.api_prefix)
 
 if settings.storage_backend == "local":

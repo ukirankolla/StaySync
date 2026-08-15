@@ -79,7 +79,8 @@ export default function ProfileModal({ userId, onClose, onConnected }) {
               {profile.occupation_detail && <span className="chip chip-gray">{profile.occupation_detail}</span>}
               <span className="chip chip-gray">{profile.city}</span>
               {profile.preferred_area && <span className="chip chip-gray">{profile.preferred_area}</span>}
-              {profile.is_verified && <span className="chip chip-green">verified</span>}
+              {profile.is_id_verified && <span className="chip chip-green" title="Government ID verified">ID verified</span>}
+              {!profile.is_id_verified && profile.is_verified && <span className="chip chip-green">verified</span>}
             </div>
             {profile.budget_min != null && (
               <p className="muted mt-8">Budget ₹{profile.budget_min.toLocaleString('en-IN')}–{profile.budget_max?.toLocaleString('en-IN')}/mo · moves {profile.move_in_date || 'flexible'}</p>

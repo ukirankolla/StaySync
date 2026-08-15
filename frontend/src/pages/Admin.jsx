@@ -11,6 +11,7 @@ export default function Admin() {
   const [users, setUsers] = useState([])
   const [reports, setReports] = useState([])
   const [listings, setListings] = useState([])
+  const [verifications, setVerifications] = useState([])
   const [err, setErr] = useState('')
   const [notice, setNotice] = useState('')
 
@@ -18,11 +19,13 @@ export default function Admin() {
   const loadUsers = () => api('/admin/users').then(setUsers).catch(() => {})
   const loadReports = () => api('/admin/reports').then(setReports).catch(() => {})
   const loadListings = () => api('/admin/listings').then(setListings).catch(() => {})
+  const loadVerifications = () => api('/admin/verifications').then(setVerifications).catch(() => {})
 
   useEffect(() => { loadStats() }, [])
   useEffect(() => { if (tab === 'users') loadUsers() }, [tab])
   useEffect(() => { if (tab === 'reports') loadReports() }, [tab])
   useEffect(() => { if (tab === 'listings') loadListings() }, [tab])
+  useEffect(() => { if (tab === 'verifications') loadVerifications() }, [tab])
 
   const flash = (m) => { setNotice(m); setTimeout(() => setNotice(''), 3000) }
 
@@ -44,7 +47,24 @@ export default function Admin() {
     loadListings()
   }
 
+  const reviewVerification = async (id, action) => {
+    const note = action === 'reject' ? prompt('Reason for rejection (optional, shown to the user):') : null
+    if (action === 'reject' && note === null) return
+    const qs = note != null ? `&note=${encodeURIComponent(note)}` : ''
+    await api(`/admin/verifications/${id}/review?action=${action}${qs}`, { method: 'POST' })
+    flash(`Verification ${action}d`)
+    loadVerifications()
+  }
+
   const toggle = (t) => setTab(t)
+
+  const idLabel = (type) => ({
+    passport: 'Passport',
+    driving_license: "Driver's license",
+    national_id: 'National ID',
+    student_id: 'Student ID',
+    other: 'Other',
+  }[type] || type)
 
   return (
     <div>
@@ -53,7 +73,7 @@ export default function Admin() {
       {notice && <div className="alert alert-success mt-8">{notice}</div>}
 
       <div className="tabs mt-16">
-        {['overview', 'users', 'reports', 'listings'].map((t) => (
+        {['overview', 'users', 'reports', 'verifications', 'listings'].map((t) => (
           <button key={t} className={`btn btn-sm ${tab === t ? 'btn-primary' : 'btn-ghost'}`} onClick={() => toggle(t)}>
             {t[0].toUpperCase() + t.slice(1)}
           </button>
@@ -73,6 +93,8 @@ export default function Admin() {
             <Stat label="Listings" value={stats.total_listings} />
             <Stat label="Approved listings" value={stats.approved_listings} />
             <Stat label="Pending reports" value={stats.pending_reports} />
+            <Stat label="Pending ID verifications" value={stats.pending_verifications} />
+            <Stat label="ID verified users" value={stats.id_verified_users} />
             <Stat label="Suspended users" value={stats.suspended_users} />
           </div>
 
@@ -148,6 +170,37 @@ export default function Admin() {
                           <button className="btn btn-sm btn-success" onClick={() => reviewReport(r.id, 'resolve')}>Resolve</button>
                           <button className="btn btn-sm btn-danger" onClick={() => reviewReport(r.id, 'suspend_user')}>Suspend</button>
                           <button className="btn btn-sm btn-ghost" onClick={() => reviewReport(r.id, 'dismiss')}>Dismiss</button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {tab === 'verifications' && (
+        <div className="card">
+          {verifications.length === 0 ? <p className="muted">No verification requests.</p> : (
+            <table className="table">
+              <thead><tr><th>ID</th><th>User</th><th>ID type</th><th>ID number</th><th>Document</th><th>Status</th><th>Submitted</th><th></th></tr></thead>
+              <tbody>
+                {verifications.map((v) => (
+                  <tr key={v.id}>
+                    <td>{v.id}</td>
+                    <td>{v.full_name || '—'}<div className="muted" style={{ fontSize: '.8rem' }}>{v.email || v.phone}</div></td>
+                    <td>{idLabel(v.id_type)}</td>
+                    <td>{v.id_number || '—'}</td>
+                    <td><a href={v.document_url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">View</a></td>
+                    <td><span className={`status-pill status-${v.status === 'approved' ? 'accepted' : v.status === 'rejected' ? 'declined' : 'pending'}`}>{v.status}</span></td>
+                    <td>{new Date(v.created_at).toLocaleDateString()}</td>
+                    <td>
+                      {v.status === 'pending' && (
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button className="btn btn-sm btn-success" onClick={() => reviewVerification(v.id, 'approve')}>Approve</button>
+                          <button className="btn btn-sm btn-danger" onClick={() => reviewVerification(v.id, 'reject')}>Reject</button>
                         </div>
                       )}
                     </td>

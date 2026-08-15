@@ -100,6 +100,7 @@ class ProfileOut(BaseModel):
     move_in_date: str | None = None
     bio: str | None = None
     is_verified: bool
+    is_id_verified: bool = False
     is_visible: bool
     photos: list[str] = []
     privacy: dict = {}
@@ -138,6 +139,7 @@ class MatchResult(BaseModel):
     bio: str | None = None
     photos: list[str] = []
     is_verified: bool = False
+    is_id_verified: bool = False
     score: float
     ml_score: float | None = None
     category_scores: dict[str, float]
@@ -294,3 +296,29 @@ class BlockRequest(BaseModel):
 
 class ReviewReportRequest(BaseModel):
     action: str  # resolve | dismiss | suspend_user
+
+
+class VerificationSubmit(BaseModel):
+    id_type: str = Field(min_length=2, max_length=32)  # passport | driving_license | national_id | student_id | other
+    id_number: str | None = Field(default=None, max_length=64)
+    document_url: str = Field(min_length=1, max_length=500)
+
+
+class VerificationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    id_type: str
+    id_number: str | None = None
+    document_url: str
+    status: str
+    admin_note: str | None = None
+    created_at: datetime
+    reviewed_at: datetime | None = None
+
+
+class AdminVerificationOut(VerificationOut):
+    full_name: str = ""
+    email: str | None = None
+    phone: str | None = None

@@ -12,13 +12,14 @@ export default function Discover() {
   const [blocked, setBlocked] = useState(new Set())
   const [connected, setConnected] = useState(new Set())
   const [viewing, setViewing] = useState(null)
-  const [filters, setFilters] = useState({ area: '', maxBudget: '', sort: 'ml' })
+  const [filters, setFilters] = useState({ area: '', maxBudget: '', sort: 'ml', verifiedOnly: false })
   const [applied, setApplied] = useState(null)
 
   useEffect(() => {
     const params = new URLSearchParams()
     if (applied?.area) params.set('area', applied.area)
     if (applied?.maxBudget) params.set('max_budget', applied.maxBudget)
+    if (applied?.verifiedOnly) params.set('verified_only', 1)
     const qs = params.toString()
     api(`/matching/recommendations${qs ? `?${qs}` : ''}`)
       .then(setMatches)
@@ -82,8 +83,16 @@ export default function Discover() {
             <option value="budget">Lowest budget</option>
           </select>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={() => setApplied({ area: filters.area, maxBudget: filters.maxBudget })}>Apply</button>
-        <button className="btn btn-ghost btn-sm" onClick={() => { setFilters({ area: '', maxBudget: '', sort: 'ml' }); setApplied(null) }}>Reset</button>
+        <div className="field">
+          <label>&nbsp;</label>
+          <label className="form-note" style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 0' }}>
+            <input type="checkbox" checked={filters.verifiedOnly}
+                   onChange={(e) => setFilters({ ...filters, verifiedOnly: e.target.checked })} />
+            Verified only
+          </label>
+        </div>
+        <button className="btn btn-primary btn-sm" onClick={() => setApplied({ area: filters.area, maxBudget: filters.maxBudget, verifiedOnly: filters.verifiedOnly })}>Apply</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => { setFilters({ area: '', maxBudget: '', sort: 'ml', verifiedOnly: false }); setApplied(null) }}>Reset</button>
       </div>
 
       {notice && <div className="alert alert-success mb-16">{notice}</div>}

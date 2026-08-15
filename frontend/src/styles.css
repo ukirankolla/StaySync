@@ -181,6 +181,7 @@ h1, h2, h3 { line-height: 1.2; }
 .mb-8 { margin-bottom: 8px; } .mb-16 { margin-bottom: 16px; }
 .tagline { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .badge { background: var(--accent); color: #fff; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+.badge-green { background: #166534; color: #fff; }
 .empty { text-align: center; color: var(--text-muted); padding: 48px 16px; }
 
 /* ---------- modal ---------- */
