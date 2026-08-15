@@ -64,7 +64,13 @@ def _category_score(category: str, qa: dict, qb: dict) -> tuple[float, dict[str,
         b = qb.get(key)
         if a is None or b is None or a == "" or b == "":
             continue
-        score = _scale_score(int(a), int(b)) if key in SCALE_KEYS else _choice_score(str(a), str(b))
+        if key in SCALE_KEYS:
+            try:
+                score = _scale_score(int(a), int(b))
+            except (TypeError, ValueError):
+                continue
+        else:
+            score = _choice_score(str(a), str(b))
         sub_scores[key] = round(score, 1)
         w = weights.get(key, 1.0)
         acc += score * w
