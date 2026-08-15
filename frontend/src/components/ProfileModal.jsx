@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api/client'
+import Avatar from './Avatar'
 
 const CATEGORY_LABELS = {
   lifestyle: 'Lifestyle',
@@ -59,7 +60,13 @@ export default function ProfileModal({ userId, onClose, onConnected }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
-          <h3>{profile?.full_name || 'Profile'}</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Avatar name={profile?.full_name} photo={profile?.photos?.[0]} size={56} />
+            <div>
+              <h3 style={{ margin: 0 }}>{profile?.full_name || 'Profile'}</h3>
+              {profile?.is_id_verified && <span className="badge badge-green" title="Government ID verified">ID verified</span>}
+            </div>
+          </div>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
 

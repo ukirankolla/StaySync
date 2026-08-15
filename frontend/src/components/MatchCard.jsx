@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { api } from '../api/client'
+import Avatar from './Avatar'
 
 export default function MatchCard({ match, onAction, onViewProfile }) {
   const [busy, setBusy] = useState(false)
@@ -42,12 +43,13 @@ export default function MatchCard({ match, onAction, onViewProfile }) {
     }
   }
 
-  const initials = (match.full_name || 'U').split(' ').map((s) => s[0]).slice(0, 2).join('').toUpperCase()
-
   return (
     <div className="card match-card">
+      {match.photos?.length > 0 && (
+        <img className="match-photo" src={match.photos[0]} alt={match.full_name} loading="lazy" />
+      )}
       <div className="match-head">
-        <div className="avatar">{initials}</div>
+        <Avatar name={match.full_name} photo={match.photos?.[0]} />
         <div>
           <strong>{match.full_name}</strong>
           {match.is_id_verified && <span className="badge badge-green" style={{ marginLeft: 6 }} title="Government ID verified">ID verified</span>}

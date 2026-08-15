@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import ProfileModal from '../components/ProfileModal'
+import { roomImage } from '../lib/images'
 
 export default function Listings() {
   const { user } = useAuth()
@@ -246,7 +247,8 @@ export default function Listings() {
       ) : (
         <div className="grid grid-2">
           {listings.map((l) => (
-            <div className="card" key={l.id}>
+            <div className="card listing-card" key={l.id}>
+              <img className="match-photo" src={l.photos?.[0] || roomImage(l.city)} alt={l.title} loading="lazy" />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ margin: 0 }}>{l.title}</h3>
                 <span className="chip">₹{l.rent.toLocaleString('en-IN')}/mo</span>
