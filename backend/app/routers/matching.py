@@ -135,8 +135,9 @@ def recommendations(user: User = Depends(get_current_user), db: Session = Depend
         term = (area or city).strip()
         nearby = nearby_cities(term)
         if nearby:
-            fb_filter = or_(*(Profile.city.ilike(f"%{c}%") for c in nearby))
-            note = f"No matches in “{term.title()}” yet — showing matches from nearby cities"
+            nearby_cities_list, state = nearby
+            fb_filter = or_(*(Profile.city.ilike(f"%{c}%") for c in nearby_cities_list))
+            note = f"No matches in “{term.title()}” yet — showing matches from {state} (nearby)"
             results = _run_recommendations(user, db, mine_q, profile, blocked, connected,
                                            loc_filter=fb_filter, max_budget=max_budget,
                                            verified_only=verified_only, is_fallback=True,
