@@ -31,6 +31,14 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//, /^\/ws/],
         runtimeCaching: [
           {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'staysync-pages',
+              networkTimeoutSeconds: 3,
+            },
+          },
+          {
             urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/,
             handler: 'CacheFirst',
             options: {
