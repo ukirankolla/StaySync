@@ -52,6 +52,7 @@ export default function Discover() {
     if (filters.sort === 'budget') return (a.budget_min || 0) - (b.budget_min || 0)
     return (b.ml_score ?? b.score) - (a.ml_score ?? a.score)
   })
+  const fallback = visible.find((m) => m.is_fallback)
 
   if (loading) return <div className="page-muted">Finding compatible roommates…</div>
   if (err) return <div className="page-muted">{err}</div>
@@ -96,6 +97,7 @@ export default function Discover() {
       </div>
 
       {notice && <div className="alert alert-success mb-16">{notice}</div>}
+      {fallback && <div className="alert mb-16">{fallback.fallback_note}</div>}
 
       {sorted.length === 0 ? (
         <div className="empty">

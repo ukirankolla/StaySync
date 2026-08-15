@@ -140,6 +140,8 @@ class MatchResult(BaseModel):
     photos: list[str] = []
     is_verified: bool = False
     is_id_verified: bool = False
+    is_fallback: bool = False
+    fallback_note: str | None = None
     score: float
     ml_score: float | None = None
     category_scores: dict[str, float]

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import or_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -15,6 +15,7 @@ from ..schemas import (
 from ..services.agents import get_agent
 from ..services.chat_manager import chat_manager
 from ..services.events import track
+from ..services.location import nearby_cities
 from ..services.matching import compute_compatibility
 from ..services.ml_model import predict as ml_predict
 
@@ -39,7 +40,8 @@ def _load_pair(user: User, peer_id: int, db: Session):
 
 
 def _to_match_result(peer: User, qa: Questionnaire | None, qb: Questionnaire | None,
-                     pa: Profile | None, pb: Profile | None) -> MatchResult:
+                     pa: Profile | None, pb: Profile | None, *,
+                     is_fallback: bool = False, fallback_note: str | None = None) -> MatchResult:
     result = compute_compatibility(
         qa.answers if qa else {}, qb.answers if qb else {},
         pa.__dict__ if pa else {}, pb.__dict__ if pb else {},
@@ -60,11 +62,43 @@ def _to_match_result(peer: User, qa: Questionnaire | None, qb: Questionnaire | N
         photos=pb.photos if pb else [],
         is_verified=pb.is_verified if pb else False,
         is_id_verified=pb.is_id_verified if pb else False,
+        is_fallback=is_fallback,
+        fallback_note=fallback_note,
         score=result["score"],
         ml_score=round(ml * 100, 1) if ml is not None else None,
         category_scores=result["category_scores"],
         reasons=result["reasons"],
     )
+
+
+def _run_recommendations(user: User, db: Session, mine_q: Questionnaire | None,
+                         profile: Profile | None, blocked: set[int], connected: set[int],
+                         loc_filter=None, max_budget: int | None = None,
+                         verified_only: bool = False, is_fallback: bool = False,
+                         fallback_note: str | None = None) -> list[MatchResult]:
+    query = (
+        select(User)
+        .join(Profile, Profile.user_id == User.id)
+        .join(Questionnaire, Questionnaire.user_id == User.id)
+        .where(User.id != user.id, User.is_active.is_(True), User.is_suspended.is_(False),
+               Profile.is_visible.is_(True), Questionnaire.completed_at.isnot(None))
+    )
+    if loc_filter is not None:
+        query = query.where(loc_filter)
+    if max_budget:
+        query = query.where(Profile.budget_min <= max_budget)
+    if verified_only:
+        query = query.where(Profile.is_id_verified.is_(True))
+
+    results: list[MatchResult] = []
+    for peer in db.scalars(query).all():
+        if peer.id in blocked or peer.id in connected:
+            continue
+        qb = db.query(Questionnaire).filter(Questionnaire.user_id == peer.id).first()
+        pb = db.query(Profile).filter(Profile.user_id == peer.id).first()
+        results.append(_to_match_result(peer, mine_q, qb, profile, pb,
+                                        is_fallback=is_fallback, fallback_note=fallback_note))
+    return results
 
 
 @router.get("/recommendations", response_model=list[MatchResult])
@@ -83,33 +117,41 @@ def recommendations(user: User = Depends(get_current_user), db: Session = Depend
                                                                Connection.status.in_(["pending", "accepted"])).all()
     }
 
-    query = (
-        select(User)
-        .join(Profile, Profile.user_id == User.id)
-        .join(Questionnaire, Questionnaire.user_id == User.id)
-        .where(User.id != user.id, User.is_active.is_(True), User.is_suspended.is_(False),
-               Profile.is_visible.is_(True), Questionnaire.completed_at.isnot(None))
-    )
+    location_applied = bool(area or city)
+    loc_filter = None
     if city:
-        query = query.where(Profile.city.ilike(f"%{city}%"))
+        loc_filter = Profile.city.ilike(f"%{city}%")
     if area:
         like = f"%{area}%"
-        query = query.where(or_(Profile.preferred_area.ilike(like), Profile.city.ilike(like)))
-    if max_budget:
-        query = query.where(Profile.budget_min <= max_budget)
-    if verified_only:
-        query = query.where(Profile.is_id_verified.is_(True))
+        area_like = or_(Profile.preferred_area.ilike(like), Profile.city.ilike(like))
+        loc_filter = area_like if loc_filter is None else and_(loc_filter, area_like)
 
-    results: list[MatchResult] = []
-    for peer in db.scalars(query).all():
-        if peer.id in blocked or peer.id in connected:
-            continue
-        qb = db.query(Questionnaire).filter(Questionnaire.user_id == peer.id).first()
-        pb = db.query(Profile).filter(Profile.user_id == peer.id).first()
-        results.append(_to_match_result(peer, mine_q, qb, profile, pb))
+    results = _run_recommendations(user, db, mine_q, profile, blocked, connected,
+                                   loc_filter=loc_filter, max_budget=max_budget,
+                                   verified_only=verified_only)
+
+    # Never dead-end: if an exact location search finds nothing, broaden it.
+    if not results and location_applied:
+        term = (area or city).strip()
+        nearby = nearby_cities(term)
+        if nearby:
+            fb_filter = or_(*(Profile.city.ilike(f"%{c}%") for c in nearby))
+            note = f"No matches in “{term.title()}” yet — showing matches from nearby cities"
+            results = _run_recommendations(user, db, mine_q, profile, blocked, connected,
+                                           loc_filter=fb_filter, max_budget=max_budget,
+                                           verified_only=verified_only, is_fallback=True,
+                                           fallback_note=note)
+        if not results:
+            note = f"No matches in “{term.title()}” yet — showing matches from other cities"
+            results = _run_recommendations(user, db, mine_q, profile, blocked, connected,
+                                           loc_filter=None, max_budget=max_budget,
+                                           verified_only=verified_only, is_fallback=True,
+                                           fallback_note=note)
 
     results.sort(key=lambda r: (r.ml_score if r.ml_score is not None else r.score), reverse=True)
-    track(db, user.id, "recommendations_viewed", {"count": len(results)})
+    track(db, user.id, "recommendations_viewed",
+          {"count": len(results), "fallback": bool(results and results[0].is_fallback),
+           "area": area, "city": city})
     return results
 
 
