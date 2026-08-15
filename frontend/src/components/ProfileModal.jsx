@@ -100,7 +100,6 @@ export default function ProfileModal({ userId, onClose, onConnected }) {
                   <h4 style={{ margin: 0 }}>Compatibility</h4>
                   <span className="score-badge">{Math.round(score.score)}%</span>
                 </div>
-                {score.ml_score != null && <p className="muted mt-8" style={{ fontSize: '.85rem' }}>ML model prediction: {Math.round(score.ml_score)}% match likelihood</p>}
                 <div className="breakdown mt-8">
                   {Object.entries(score.category_scores || {}).map(([key, val]) => (
                     <div key={key} className="breakdown-row">

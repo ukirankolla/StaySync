@@ -70,7 +70,7 @@ export default function Discover() {
         <h2>Recommended roommates</h2>
         <Link to="/questionnaire" className="btn btn-ghost btn-sm">Update questionnaire</Link>
       </div>
-      <p className="muted mb-16">Ranked by compatibility score and our ML model. Transparency first — every score comes with reasons.</p>
+      <p className="muted mb-16">Ranked by compatibility score. Transparency first — every score comes with reasons.</p>
 
       <div className="card mb-16" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>
         <div className="field">
@@ -86,7 +86,7 @@ export default function Discover() {
         <div className="field">
           <label>Sort by</label>
           <select className="select" value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value })}>
-            <option value="ml">Best match (ML)</option>
+            <option value="ml">Best match</option>
             <option value="score">Compatibility score</option>
             <option value="budget">Lowest budget</option>
           </select>

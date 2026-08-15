@@ -65,7 +65,6 @@ export default function MatchCard({ match, onAction, onViewProfile }) {
         {match.budget_min && <span className="chip">₹{match.budget_min.toLocaleString('en-IN')}+/mo</span>}
         {match.preferred_area && <span className="chip chip-gray">{match.preferred_area}</span>}
         {match.move_in_date && <span className="chip chip-gray">moves {match.move_in_date}</span>}
-        {match.ml_score != null && <span className="chip chip-green">ML {Math.round(match.ml_score)}</span>}
       </div>
 
       {match.bio && <p className="muted" style={{ fontSize: '.88rem', margin: 0 }}>{match.bio}</p>}

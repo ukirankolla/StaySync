@@ -9,7 +9,7 @@ const FEATURES = [
   { title: 'Roommate groups', text: 'Form a group with compatible people, then hunt for a flat together.', img: IMG.friends },
   { title: 'Flat listings', text: 'Browse verified room and flat listings that fit your group’s budget and area.', img: IMG.home },
   { title: 'Safety tools', text: 'Report, block, and moderation reviews keep the community safe.', img: IMG.crowd },
-  { title: 'ML-powered matches', text: 'A learning model refines recommendations as the community grows.', img: IMG.office },
+  { title: 'Smarter matches', text: 'Ranking that learns and refines itself as the community grows.', img: IMG.office },
 ]
 
 const STEPS = [
