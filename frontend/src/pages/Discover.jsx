@@ -14,6 +14,13 @@ export default function Discover() {
   const [viewing, setViewing] = useState(null)
   const [filters, setFilters] = useState({ area: '', maxBudget: '', sort: 'ml', verifiedOnly: false })
   const [applied, setApplied] = useState(null)
+  const [needQuestionnaire, setNeedQuestionnaire] = useState(false)
+
+  useEffect(() => {
+    api('/profile/questionnaire/answers')
+      .then((d) => setNeedQuestionnaire(!d.completed))
+      .catch(() => setNeedQuestionnaire(true))
+  }, [])
 
   useEffect(() => {
     const params = new URLSearchParams()
@@ -98,6 +105,12 @@ export default function Discover() {
 
       {notice && <div className="alert alert-success mb-16">{notice}</div>}
       {fallback && <div className="alert mb-16">{fallback.fallback_note}</div>}
+      {needQuestionnaire && (
+        <div className="alert alert-info mb-16">
+          These scores are estimates — complete your{' '}
+          <Link to="/questionnaire">lifestyle questionnaire</Link> to unlock accurate match scores and better matches.
+        </div>
+      )}
 
       {sorted.length === 0 ? (
         <div className="empty">
@@ -105,6 +118,9 @@ export default function Discover() {
           {matches.length === 0 && (
             <p>Complete your profile and lifestyle questionnaire to unlock recommendations.</p>
           )}
+          <p>
+            <Link to="/questionnaire" className="btn btn-primary btn-sm mt-8">Complete questionnaire</Link>
+          </p>
         </div>
       ) : (
         <div className="grid grid-2">
