@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+import re
 
 
 class Settings(BaseSettings):
@@ -35,6 +36,10 @@ class Settings(BaseSettings):
     mail_from: str = "StaySync <no-reply@staysync.local>"
     smtp_use_tls: bool = True
 
+    # HTTPS email API (Brevo) — preferred over SMTP because Railway only allows
+    # outbound web traffic (443) on Free/Hobby plans; SMTP ports are blocked.
+    brevo_api_key: str = ""
+
     # Upload storage. "local" writes to ./uploads on disk; "supabase" uploads to
     # Supabase Storage. Set supabase_url + supabase_service_key to enable supabase.
     storage_backend: str = "local"
@@ -45,6 +50,38 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def sender_name(self) -> str:
+        name, _email = parse_mail_from(self.mail_from, self.smtp_user)
+        return name
+
+    @property
+    def sender_email(self) -> str:
+        _name, email = parse_mail_from(self.mail_from, self.smtp_user)
+        return email
+
+
+def parse_mail_from(value: str, fallback_email: str) -> tuple[str, str]:
+    """Split a 'Name <email>' (or mangled 'Name email') string into (name, email)."""
+    email = ""
+    name = ""
+    m = re.search(r"<([^<>]+)>", value)
+    if m:
+        email = m.group(1).strip()
+        name = value[: m.start()].replace("<", "").replace(">", "").strip()
+    else:
+        tokens = value.split()
+        for tok in tokens:
+            if "@" in tok:
+                email = tok.strip("<>(),;")
+                name = " ".join(t for t in tokens if "@" not in t).strip()
+                break
+    if not email:
+        email = fallback_email or ""
+    if not name:
+        name = "StaySync"
+    return name or "StaySync", email
 
 
 settings = Settings()
