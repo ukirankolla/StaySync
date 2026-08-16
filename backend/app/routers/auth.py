@@ -20,7 +20,7 @@ from ..schemas import (
 )
 from ..security import create_access_token, generate_otp, hash_password, otp_expiry, verify_password
 from ..services.events import track
-from ..services.notify import send_otp
+from ..services.notify import send_otp, send_welcome_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -52,6 +52,8 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     db.add(Profile(user_id=user.id, full_name=payload.full_name, city=""))
     db.commit()
     track(db, user.id, "registration", {"method": "password"})
+    if email:
+        send_welcome_email(email, payload.full_name)
     return _user_to_response(user)
 
 
@@ -99,6 +101,8 @@ def verify_otp(payload: OtpVerifyRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
     track(db, user.id, "registration" if is_new else "login", {"method": "otp"})
+    if is_new and email:
+        send_welcome_email(email)
     return _user_to_response(user)
 
 
