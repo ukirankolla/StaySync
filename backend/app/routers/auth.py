@@ -19,6 +19,7 @@ from ..schemas import (
     UserOut,
 )
 from ..security import create_access_token, generate_otp, hash_password, otp_expiry, verify_password
+from ..config import settings
 from ..services.events import track
 from ..services.notify import send_otp, send_welcome_email
 
@@ -77,9 +78,9 @@ def request_otp(payload: OtpRequest, db: Session = Depends(get_db)):
                    purpose=payload.purpose, expires_at=otp_expiry()))
     db.commit()
     delivery = send_otp(payload.identifier.strip(), code)
-    # dev convenience: return the code only when it could not actually be delivered
+    dev_code = code if (not delivery["delivered"] and settings.env == "development") else None
     return {"message": "OTP sent", "channel": delivery["channel"], "delivered": delivery["delivered"],
-            "dev_code": code if not delivery["delivered"] else None}
+            "dev_code": dev_code}
 
 
 @router.post("/otp/verify", response_model=TokenResponse)
@@ -124,7 +125,8 @@ def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db
     db.commit()
     delivery = send_otp(ident, code)
     return {"message": "If an account exists, an OTP has been sent",
-            "delivered": delivery["delivered"], "dev_code": code if not delivery["delivered"] else None}
+            "delivered": delivery["delivered"],
+            "dev_code": code if (not delivery["delivered"] and settings.env == "development") else None}
 
 
 @router.post("/reset")

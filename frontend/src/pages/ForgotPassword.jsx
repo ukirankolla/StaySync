@@ -8,7 +8,6 @@ export default function ForgotPassword() {
   const [identifier, setIdentifier] = useState('')
   const [code, setCode] = useState('')
   const [newPassword, setNewPassword] = useState('')
-  const [devCode, setDevCode] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -17,8 +16,7 @@ export default function ForgotPassword() {
     setError('')
     setBusy(true)
     try {
-      const res = await api('/auth/forgot', { method: 'POST', body: { identifier } })
-      setDevCode(res.dev_code || '')
+      await api('/auth/forgot', { method: 'POST', body: { identifier } })
       setStep('verify')
     } catch (err) {
       setError(err.message)
@@ -60,7 +58,6 @@ export default function ForgotPassword() {
         <form className="form card" onSubmit={reset}>
           <h2 className="center">Set a new password</h2>
           {error && <div className="alert">{error}</div>}
-          {devCode && <div className="alert alert-info">Development mode — your code is <strong>{devCode}</strong></div>}
           <div className="field">
             <label>6-digit code</label>
             <input className="input" value={code} onChange={(e) => setCode(e.target.value)} placeholder="000000" required />

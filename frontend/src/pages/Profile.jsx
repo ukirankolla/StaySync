@@ -38,7 +38,6 @@ export default function Profile() {
   const [verifyMsg, setVerifyMsg] = useState('')
   const [otpCode, setOtpCode] = useState('')
   const [otpStep, setOtpStep] = useState('idle')
-  const [devCode, setDevCode] = useState('')
   const [idVerify, setIdVerify] = useState(null)
   const [idDocUrl, setIdDocUrl] = useState('')
   const [idType, setIdType] = useState('passport')
@@ -105,9 +104,8 @@ export default function Profile() {
     setVerifyMsg('')
     setOtpCode('')
     try {
-      const res = await api('/profile/verify/request', { method: 'POST', body: {} })
+      await api('/profile/verify/request', { method: 'POST', body: {} })
       setOtpStep('sent')
-      setDevCode(res.dev_code || '')
     } catch (err) {
       setVerifyMsg(err.message)
     }
@@ -214,7 +212,9 @@ export default function Profile() {
               : 'Verify your email to earn a verified badge and boost trust with roommates.'}
           </div>
         </div>
-        {otpStep !== 'idle' && <div className="muted" style={{ fontSize: '.8rem' }}>Dev mode: code is {devCode}</div>}
+        {otpStep !== 'idle' && (
+          <p className="muted" style={{ fontSize: '.8rem' }}>Check your inbox for the verification code.</p>
+        )}
         {!isVerified && otpStep === 'idle' && (
           <button className="btn btn-sm" onClick={requestVerify}>Verify now</button>
         )}

@@ -15,6 +15,7 @@ from ..schemas import (
     VerifyProfileRequest,
 )
 from ..security import generate_otp, otp_expiry
+from ..config import settings
 from ..services.agents import get_agent
 from ..services.events import track
 from ..services.notify import send_otp
@@ -125,7 +126,8 @@ def request_verification(user: User = Depends(get_current_user), db: Session = D
     db.commit()
     delivery = send_otp(identifier, code)
     return {"message": f"Verification code sent to {identifier}", "channel": delivery["channel"],
-            "delivered": delivery["delivered"], "dev_code": code if not delivery["delivered"] else None}
+            "delivered": delivery["delivered"],
+            "dev_code": code if (not delivery["delivered"] and settings.env == "development") else None}
 
 
 @router.post("/verify/confirm", response_model=ProfileOut)

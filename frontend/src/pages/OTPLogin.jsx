@@ -9,7 +9,6 @@ export default function OTPLogin() {
   const [identifier, setIdentifier] = useState('')
   const [code, setCode] = useState('')
   const [step, setStep] = useState('request')
-  const [devCode, setDevCode] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -18,8 +17,7 @@ export default function OTPLogin() {
     setError('')
     setBusy(true)
     try {
-      const res = await api('/auth/otp/request', { method: 'POST', body: { identifier, purpose: 'login' } })
-      setDevCode(res.dev_code || '')
+      await api('/auth/otp/request', { method: 'POST', body: { identifier, purpose: 'login' } })
       setStep('verify')
     } catch (err) {
       setError(err.message)
@@ -60,7 +58,6 @@ export default function OTPLogin() {
         <form className="form card" onSubmit={verify}>
           <h2 className="center">Enter the code</h2>
           {error && <div className="alert">{error}</div>}
-          {devCode && <div className="alert alert-info">Development mode — your OTP is <strong>{devCode}</strong></div>}
           <div className="field">
             <label>6-digit code</label>
             <input className="input" value={code} onChange={(e) => setCode(e.target.value)} placeholder="000000" required />
