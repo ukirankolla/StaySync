@@ -42,19 +42,13 @@ export default function Listings() {
       amenities: (l.amenities || []).join(', '), available_from: l.available_from || '',
       looking_for: l.looking_for || '', photos: l.photos || [],
     })
-    setEditId(l.id)
-    setShowForm(true)
+    setEditId(l.id); setShowForm(true)
   }
 
-  const cancelEdit = () => {
-    setEditId(null)
-    setForm(emptyForm)
-    setShowForm(false)
-  }
+  const cancelEdit = () => { setEditId(null); setForm(emptyForm); setShowForm(false) }
 
   const create = async (e) => {
-    e.preventDefault()
-    setErr('')
+    e.preventDefault(); setErr('')
     try {
       const payload = {
         title: form.title, description: form.description, city: form.city, area: form.area,
@@ -65,34 +59,24 @@ export default function Listings() {
         photos: form.photos,
       }
       if (editId) {
-        await api(`/listings/${editId}`, { method: 'PUT', body: payload })
-        setNotice('Listing updated.')
+        await api(`/listings/${editId}`, { method: 'PUT', body: payload }); setNotice('Listing updated.')
       } else {
-        await api('/listings', { method: 'POST', body: payload })
-        setNotice('Listing submitted for review.')
+        await api('/listings', { method: 'POST', body: payload }); setNotice('Listing submitted for review.')
       }
-      cancelEdit()
-      setTimeout(() => setNotice(''), 4000)
-      loadMine()
-      load()
+      cancelEdit(); setTimeout(() => setNotice(''), 4000); loadMine(); load()
     } catch (e2) { setErr(e2.message) }
   }
 
   const toggleActive = async (l) => {
-    try {
-      await api(`/listings/${l.id}`, { method: 'PUT', body: { is_active: !l.is_active } })
-      loadMine()
-    } catch (e2) { setErr(e2.message) }
+    try { await api(`/listings/${l.id}`, { method: 'PUT', body: { is_active: !l.is_active } }); loadMine() }
+    catch (e2) { setErr(e2.message) }
   }
 
   const uploadPhoto = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    setErr('')
+    const file = e.target.files?.[0]; if (!file) return
+    setUploading(true); setErr('')
     try {
-      const fd = new FormData()
-      fd.append('file', file)
+      const fd = new FormData(); fd.append('file', file)
       const res = await fetch('/api/upload/image', {
         method: 'POST',
         headers: { Authorization: `Bearer ${localStorage.getItem('staysync_token')}` },
@@ -101,41 +85,34 @@ export default function Listings() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || 'Upload failed')
       setForm((f) => ({ ...f, photos: [...f.photos, data.url] }))
-    } catch (e2) { setErr(e2.message) } finally {
-      setUploading(false)
-      e.target.value = ''
-    }
+    } catch (e2) { setErr(e2.message) } finally { setUploading(false); e.target.value = '' }
   }
 
   const removePhoto = (url) => setForm((f) => ({ ...f, photos: f.photos.filter((p) => p !== url) }))
 
   const contact = async (l) => {
-    setContacting(l.id)
-    setErr('')
+    setContacting(l.id); setErr('')
     try {
       const res = await api(`/listings/${l.id}/contact`, { method: 'POST' })
-      if (res.status === 'accepted') {
-        window.location.href = `/chat/${res.connection_id}`
-      } else {
-        setNotice('Request sent to the owner. Once they accept, you can chat about the flat.')
-        setTimeout(() => setNotice(''), 5000)
-      }
+      if (res.status === 'accepted') { window.location.href = `/chat/${res.connection_id}` }
+      else { setNotice('Request sent to the owner. Once they accept, you can chat.'); setTimeout(() => setNotice(''), 5000) }
     } catch (e) { setErr(e.message) } finally { setContacting(null) }
   }
 
   const report = async (l) => {
     const reason = prompt('Reason for reporting this listing?', 'Fake listing')
     if (!reason) return
-    try {
-      await api('/moderation/report', { method: 'POST', body: { target_type: 'listing', listing_id: l.id, reason } })
-      alert('Report submitted.')
-    } catch (e) { alert(e.message) }
+    try { await api('/moderation/report', { method: 'POST', body: { target_type: 'listing', listing_id: l.id, reason } }); alert('Report submitted.') }
+    catch (e) { alert(e.message) }
   }
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-        <h2>Flats & rooms</h2>
+        <div>
+          <h2 style={{ marginBottom: 4 }}>Flats & rooms</h2>
+          <div className="live-indicator"><span className="live-dot" /> AI-generated previews</div>
+        </div>
         <button className="btn btn-primary btn-sm" onClick={() => setShowForm((s) => !s)}>
           {showForm ? 'Close' : '+ Post a listing'}
         </button>
@@ -144,45 +121,32 @@ export default function Listings() {
       {notice && <div className="alert alert-success mt-16">{notice}</div>}
       {err && <div className="alert mt-16">{err}</div>}
 
-      <div className="card mt-16 mb-16" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>
+      <div className="card mt-16 mb-16" style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'end' }}>
         <div className="field">
           <label>City</label>
           <input className="input" value={filters.city} onChange={(e) => setFilters({ ...filters, city: e.target.value })}
-                 placeholder="Any city — e.g. Delhi, London, New York" />
+                 placeholder="e.g. Delhi, Bengaluru" />
         </div>
         <div className="field">
           <label>Max rent (₹/mo)</label>
           <input className="input" type="number" value={filters.maxRent} onChange={(e) => setFilters({ ...filters, maxRent: e.target.value })} placeholder="20000" />
         </div>
-        <button className="btn btn-ghost" onClick={load}>Filter</button>
+        <button className="btn btn-primary btn-sm" onClick={load}><span>🔍</span> Filter</button>
       </div>
 
       {showForm && (
         <form className="card mb-16" onSubmit={create}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3>{editId ? 'Edit listing' : 'Post a room / flat listing'}</h3>
+            <h3 style={{ margin: 0 }}>{editId ? 'Edit listing' : 'Post a room / flat listing'}</h3>
             <button type="button" className="btn btn-ghost btn-sm" onClick={cancelEdit}>× Cancel</button>
           </div>
           <div className="form-row mt-8">
-            <div className="field">
-              <label>Title</label>
-              <input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-            </div>
-            <div className="field">
-              <label>Rent (₹/mo)</label>
-              <input className="input" type="number" value={form.rent} onChange={(e) => setForm({ ...form, rent: e.target.value })} required />
-            </div>
+            <div className="field"><label>Title</label><input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required /></div>
+            <div className="field"><label>Rent (₹/mo)</label><input className="input" type="number" value={form.rent} onChange={(e) => setForm({ ...form, rent: e.target.value })} required /></div>
           </div>
           <div className="form-row mt-8">
-            <div className="field">
-              <label>City</label>
-              <input className="input" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}
-                     placeholder="Any city — e.g. Bengaluru, London, New York" required />
-            </div>
-            <div className="field">
-              <label>Area</label>
-              <input className="input" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} />
-            </div>
+            <div className="field"><label>City</label><input className="input" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} required /></div>
+            <div className="field"><label>Area</label><input className="input" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} /></div>
           </div>
           <div className="form-row mt-8">
             <div className="field">
@@ -193,29 +157,14 @@ export default function Listings() {
                 <option value="whole">Whole flat</option>
               </select>
             </div>
-            <div className="field">
-              <label>BHK</label>
-              <input className="input" value={form.bhk} onChange={(e) => setForm({ ...form, bhk: e.target.value })} placeholder="2BHK" />
-            </div>
+            <div className="field"><label>BHK</label><input className="input" value={form.bhk} onChange={(e) => setForm({ ...form, bhk: e.target.value })} placeholder="2BHK" /></div>
           </div>
           <div className="form-row mt-8">
-            <div className="field">
-              <label>Deposit (₹)</label>
-              <input className="input" type="number" value={form.deposit} onChange={(e) => setForm({ ...form, deposit: e.target.value })} />
-            </div>
-            <div className="field">
-              <label>Flatmates wanted</label>
-              <input className="input" type="number" value={form.looking_for} onChange={(e) => setForm({ ...form, looking_for: e.target.value })} />
-            </div>
+            <div className="field"><label>Deposit (₹)</label><input className="input" type="number" value={form.deposit} onChange={(e) => setForm({ ...form, deposit: e.target.value })} /></div>
+            <div className="field"><label>Flatmates wanted</label><input className="input" type="number" value={form.looking_for} onChange={(e) => setForm({ ...form, looking_for: e.target.value })} /></div>
           </div>
-          <div className="field mt-8">
-            <label>Amenities (comma separated)</label>
-            <input className="input" value={form.amenities} onChange={(e) => setForm({ ...form, amenities: e.target.value })} placeholder="WiFi, Parking, Gym" />
-          </div>
-          <div className="field mt-8">
-            <label>Available from</label>
-            <input className="input" type="date" value={form.available_from} onChange={(e) => setForm({ ...form, available_from: e.target.value })} />
-          </div>
+          <div className="field mt-8"><label>Amenities (comma separated)</label><input className="input" value={form.amenities} onChange={(e) => setForm({ ...form, amenities: e.target.value })} placeholder="WiFi, Parking, Gym" /></div>
+          <div className="field mt-8"><label>Available from</label><input className="input" type="date" value={form.available_from} onChange={(e) => setForm({ ...form, available_from: e.target.value })} /></div>
           <div className="field mt-8">
             <label>Photos</label>
             {form.photos.length > 0 && (
@@ -224,7 +173,7 @@ export default function Listings() {
                   <div key={p} style={{ position: 'relative' }}>
                     <img src={p} alt="" className="photo-thumb photo-thumb-lg" />
                     <button type="button" onClick={() => removePhoto(p)}
-                            style={{ position: 'absolute', top: -6, right: -6, borderRadius: '50%', background: 'var(--danger)', color: '#fff', border: 'none', width: 20, height: 20, cursor: 'pointer' }}>×</button>
+                            style={{ position: 'absolute', top: -6, right: -6, borderRadius: '50%', background: 'var(--danger)', color: '#fff', border: 'none', width: 22, height: 22, cursor: 'pointer', fontSize: '.7rem' }}>×</button>
                   </div>
                 ))}
               </div>
@@ -235,16 +184,17 @@ export default function Listings() {
               {uploading && <span className="muted">Uploading…</span>}
             </div>
           </div>
-          <div className="field mt-8">
-            <label>Description</label>
-            <textarea className="input" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-          </div>
+          <div className="field mt-8"><label>Description</label><textarea className="input" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
           <button className="btn btn-primary btn-block mt-16">{editId ? 'Save changes' : 'Submit for review'}</button>
         </form>
       )}
 
       {listings.length === 0 ? (
-        <div className="empty">No listings match your filters.</div>
+        <div className="empty">
+          <div style={{ fontSize: '3rem', marginBottom: 12 }}>🏢</div>
+          <div style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: 8 }}>No listings match your filters</div>
+          <p>Try adjusting your search criteria.</p>
+        </div>
       ) : (
         <div className="grid grid-2">
           {listings.map((l) => (
@@ -255,7 +205,7 @@ export default function Listings() {
                 <AiImage className="match-photo" prompt={listingPrompt(l)} seed={l.id % 100000} fallback={roomImage(l.city)} alt={l.title} />
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ margin: 0 }}>{l.title}</h3>
+                <h3 style={{ margin: 0, fontSize: '1.05rem' }}>{l.title}</h3>
                 <span className="chip">₹{l.rent.toLocaleString('en-IN')}/mo</span>
               </div>
               <div className="match-meta mt-8">
@@ -265,13 +215,13 @@ export default function Listings() {
                 {l.bhk && <span className="chip chip-gray">{l.bhk}</span>}
                 {l.is_verified && <span className="chip chip-green">verified</span>}
               </div>
-              {l.description && <p className="muted mt-8" style={{ fontSize: '.9rem' }}>{l.description}</p>}
+              {l.description && <p className="muted mt-8" style={{ fontSize: '.88rem', lineHeight: 1.5 }}>{l.description}</p>}
               {l.photos?.length > 0 && (
                 <div className="photo-strip mt-8">
                   {l.photos.slice(0, 4).map((p) => <img key={p} src={p} alt="" className="photo-thumb" />)}
                 </div>
               )}
-              <div className="mt-8" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div className="mt-8" style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
                 {l.amenities.map((a) => <span key={a} className="chip chip-gray">{a}</span>)}
               </div>
               {l.available_from && <p className="muted mt-8" style={{ fontSize: '.82rem' }}>Available from {l.available_from}</p>}
@@ -279,7 +229,7 @@ export default function Listings() {
                 {l.owner_id !== user.id && (
                   <>
                     <button className="btn btn-primary btn-sm" disabled={contacting === l.id} onClick={() => contact(l)}>
-                      {contacting === l.id ? 'Sending…' : 'Contact owner'}
+                      {contacting === l.id ? 'Sending…' : '🔗 Contact owner'}
                     </button>
                     <button className="btn btn-ghost btn-sm" onClick={() => setViewOwner(l.owner_id)}>View owner</button>
                     <button className="btn btn-ghost btn-sm" onClick={() => report(l)}>Report</button>
@@ -293,15 +243,19 @@ export default function Listings() {
 
       {mine.length > 0 && (
         <>
-          <h3 className="mt-24">Your listings</h3>
+          <h3 className="mt-24" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>📋</span> Your listings
+          </h3>
           <div className="grid grid-2">
             {mine.map((l) => (
               <div className="card" key={l.id}>
-                <strong>{l.title}</strong>
-                <span className={`status-pill status-${l.status === 'approved' ? 'accepted' : 'pending'}`} style={{ marginLeft: 8 }}>{l.status}</span>
-                {l.status === 'approved' && (
-                  <span className={`status-pill ${l.is_active ? 'status-accepted' : 'status-declined'}`} style={{ marginLeft: 8 }}>{l.is_active ? 'active' : 'hidden'}</span>
-                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                  <strong>{l.title}</strong>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <span className={`status-pill status-${l.status === 'approved' ? 'accepted' : 'pending'}`}>{l.status}</span>
+                    {l.status === 'approved' && <span className={`status-pill ${l.is_active ? 'status-accepted' : 'status-declined'}`}>{l.is_active ? 'active' : 'hidden'}</span>}
+                  </div>
+                </div>
                 <p className="muted mt-8 mb-8">₹{l.rent.toLocaleString('en-IN')}/mo · {l.city}</p>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button className="btn btn-sm" onClick={() => startEdit(l)}>Edit</button>

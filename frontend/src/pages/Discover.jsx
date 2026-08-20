@@ -61,20 +61,33 @@ export default function Discover() {
   })
   const fallback = visible.find((m) => m.is_fallback)
 
-  if (loading) return <div className="page-muted">Finding compatible roommates…</div>
+  if (loading) return (
+    <div className="page-muted">
+      <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>🧠</div>
+      <div style={{ marginBottom: 12 }}>AI is analyzing compatibility…</div>
+      <div className="typing-indicator" style={{ margin: '0 auto' }}>
+        <div className="typing-dot" /><div className="typing-dot" /><div className="typing-dot" />
+      </div>
+    </div>
+  )
   if (err) return <div className="page-muted">{err}</div>
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-        <h2>Recommended roommates</h2>
+        <div>
+          <h2 style={{ marginBottom: 4 }}>Discover matches</h2>
+          <div className="live-indicator">
+            <span className="live-dot" /> AI-powered recommendations
+          </div>
+        </div>
         <Link to="/questionnaire" className="btn btn-ghost btn-sm">Update questionnaire</Link>
       </div>
-      <p className="muted mb-16">Ranked by compatibility score. Transparency first — every score comes with reasons.</p>
+      <p className="muted mb-16">Ranked by AI compatibility score. Transparency first — every score comes with reasons.</p>
 
-      <div className="card mb-16" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>
+      <div className="card mb-16" style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'end' }}>
         <div className="field">
-          <label>Location (any city / area)</label>
+          <label>Location</label>
           <input className="input" placeholder="e.g. Delhi, Hyderabad, Koramangala" value={filters.area}
                  onChange={(e) => setFilters({ ...filters, area: e.target.value })} />
         </div>
@@ -86,20 +99,22 @@ export default function Discover() {
         <div className="field">
           <label>Sort by</label>
           <select className="select" value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value })}>
-            <option value="ml">Best match</option>
+            <option value="ml">AI best match</option>
             <option value="score">Compatibility score</option>
             <option value="budget">Lowest budget</option>
           </select>
         </div>
         <div className="field">
           <label>&nbsp;</label>
-          <label className="form-note" style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 0' }}>
+          <label className="form-note" style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '10px 0', cursor: 'pointer' }}>
             <input type="checkbox" checked={filters.verifiedOnly}
                    onChange={(e) => setFilters({ ...filters, verifiedOnly: e.target.checked })} />
             Verified only
           </label>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={() => setApplied({ area: filters.area, maxBudget: filters.maxBudget, verifiedOnly: filters.verifiedOnly })}>Apply</button>
+        <button className="btn btn-primary btn-sm" onClick={() => setApplied({ area: filters.area, maxBudget: filters.maxBudget, verifiedOnly: filters.verifiedOnly })}>
+          <span>🔍</span> Apply
+        </button>
         <button className="btn btn-ghost btn-sm" onClick={() => { setFilters({ area: '', maxBudget: '', sort: 'ml', verifiedOnly: false }); setApplied(null) }}>Reset</button>
       </div>
 
@@ -108,15 +123,16 @@ export default function Discover() {
       {needQuestionnaire && (
         <div className="alert alert-info mb-16">
           These scores are estimates — complete your{' '}
-          <Link to="/questionnaire">lifestyle questionnaire</Link> to unlock accurate match scores and better matches.
+          <Link to="/questionnaire">lifestyle questionnaire</Link> to unlock accurate AI match scores.
         </div>
       )}
 
       {sorted.length === 0 ? (
         <div className="empty">
-          No matches yet.
+          <div style={{ fontSize: '3rem', marginBottom: 16 }}>🔍</div>
+          <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: 8 }}>No matches yet</div>
           {matches.length === 0 && (
-            <p>Complete your profile and lifestyle questionnaire to unlock recommendations.</p>
+            <p>Complete your profile and lifestyle questionnaire to unlock AI recommendations.</p>
           )}
           <p>
             <Link to="/questionnaire" className="btn btn-primary btn-sm mt-8">Complete questionnaire</Link>

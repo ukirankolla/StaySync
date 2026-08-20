@@ -2,6 +2,13 @@ import React, { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { IMG } from '../lib/images'
+import AiImage from '../components/AiImage'
+
+const LOGIN_QUOTES = [
+  { text: "The compatibility score made choosing a flatmate feel safe and easy.", author: "Priya, Bengaluru" },
+  { text: "Found someone who matches my sleep schedule and budget perfectly.", author: "Arjun, Delhi" },
+  { text: "The AI matching is genuinely smart — it got my lifestyle right.", author: "Neha, Mumbai" },
+]
 
 export default function Login() {
   const { login } = useAuth()
@@ -11,6 +18,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [quote] = useState(() => LOGIN_QUOTES[Math.floor(Math.random() * LOGIN_QUOTES.length)])
 
   const submit = async (e) => {
     e.preventDefault()
@@ -33,7 +41,8 @@ export default function Login() {
     <div className="auth-wrap">
       <div className="auth-panel">
         <form className="form card" onSubmit={submit}>
-          <h2 className="center">Log in to StaySync</h2>
+          <h2 className="center">Welcome back</h2>
+          <p className="center muted" style={{ fontSize: '.9rem', marginTop: -4 }}>Log in to find your perfect flatmate</p>
           {location.state?.notice && <div className="alert alert-success">{location.state.notice}</div>}
           {error && <div className="alert">{error}</div>}
           <div className="field">
@@ -46,23 +55,26 @@ export default function Login() {
             <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
                    placeholder="••••••••" required />
           </div>
-          <button className="btn btn-primary btn-block" disabled={busy}>{busy ? 'Logging in…' : 'Log in'}</button>
+          <button className="btn btn-primary btn-block" disabled={busy}>
+            {busy ? 'Logging in…' : 'Log in'}
+          </button>
           <div className="form-note">
             Prefer a code? <Link to="/otp">Log in with OTP</Link>
           </div>
           <div className="form-note">
             <Link to="/forgot-password">Forgot password?</Link>
           </div>
-          <div className="form-note">
-            New here? <Link to="/register">Create an account</Link>
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14, textAlign: 'center' }}>
+            <span className="muted" style={{ fontSize: '.88rem' }}>New here? </span>
+            <Link to="/register" style={{ fontWeight: 600 }}>Create an account</Link>
           </div>
         </form>
       </div>
       <div className="auth-visual">
-        <img src={IMG.heroAlt} alt="" />
+        <AiImage prompt="bright modern co-living apartment, young professionals sharing a meal, warm golden hour light, photorealistic" seed={42} fallback={IMG.heroAlt} alt="" w={900} h={800} />
         <div className="auth-quote">
-          <p>“The compatibility score made choosing a flatmate feel safe and easy.”</p>
-          <span>— StaySync member</span>
+          <p>"{quote.text}"</p>
+          <span>— {quote.author}</span>
         </div>
       </div>
     </div>

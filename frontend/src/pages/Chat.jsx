@@ -10,6 +10,7 @@ export default function Chat() {
   const [text, setText] = useState('')
   const [online, setOnline] = useState(new Set())
   const [err, setErr] = useState('')
+  const [otherTyping, setOtherTyping] = useState(false)
   const wsRef = useRef(null)
   const bottomRef = useRef(null)
   const userRef = useRef(null)
@@ -64,35 +65,62 @@ export default function Chat() {
   return (
     <div className="chat-layout">
       <div className="chat-sidebar">
-        <h3 className="mb-16">Conversations</h3>
+        <h3 className="mb-16" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>💬</span> Conversations
+        </h3>
         {conns.filter((c) => c.status === 'accepted').map((c) => (
           <div key={c.id}
                className={`conn-item ${String(c.id) === String(connectionId) ? 'active' : ''}`}
                onClick={() => navigate(`/chat/${c.id}`)}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <strong>{c.peer_name}</strong>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {online.has(c.peer_id) && <span className="online-dot" />}
+                <strong>{c.peer_name}</strong>
+              </div>
               {String(c.id) !== String(connectionId) && c.unread_count > 0 &&
                 <span className="badge" style={{ background: 'var(--danger)' }}>{c.unread_count}</span>}
             </div>
-            <div className="muted" style={{ fontSize: '.82rem' }}>{c.last_message || 'Start chatting'}</div>
+            <div className="muted" style={{ fontSize: '.82rem', marginTop: 4 }}>{c.last_message || 'Start chatting'}</div>
           </div>
         ))}
         {conns.filter((c) => c.status === 'accepted').length === 0 && (
-          <p className="muted">Accept a connection request to start chatting.</p>
+          <div className="empty" style={{ padding: '32px 16px' }}>
+            <div style={{ fontSize: '2rem', marginBottom: 8 }}>💬</div>
+            <p>Accept a connection request to start chatting.</p>
+          </div>
         )}
       </div>
 
       <div className="chat-box">
         {!connectionId || connectionId === 'new' ? (
-          <div className="empty">Select a conversation from the left.</div>
+          <div className="empty" style={{ padding: '60px 16px' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>💬</div>
+            <div style={{ fontSize: '1.05rem', fontWeight: 600 }}>Select a conversation</div>
+            <p className="muted" style={{ marginTop: 8 }}>Pick a conversation from the left to start chatting</p>
+          </div>
         ) : (
           <>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <strong>{active?.peer_name || 'Chat'}</strong>
-              {online.has(active?.peer_id) && <span className="badge">online</span>}
+            <div style={{
+              padding: '14px 20px', borderBottom: '1px solid var(--border)',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              background: 'rgba(99, 102, 241, 0.03)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <strong style={{ fontSize: '1rem' }}>{active?.peer_name || 'Chat'}</strong>
+                {online.has(active?.peer_id) && (
+                  <div className="live-indicator">
+                    <span className="live-dot" /> Online
+                  </div>
+                )}
+              </div>
             </div>
             <div className="messages">
-              {messages.length === 0 && <p className="muted center">No messages yet — say hi!</p>}
+              {messages.length === 0 && (
+                <div className="empty" style={{ padding: '40px 0' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: 8 }}>👋</div>
+                  <p>No messages yet — say hi!</p>
+                </div>
+              )}
               {messages.map((m) => (
                 <div key={m.id} className={`msg ${m.sender_id === userRef.current ? 'me' : 'other'}`}>
                   {m.content}
@@ -101,11 +129,13 @@ export default function Chat() {
               ))}
               <div ref={bottomRef} />
             </div>
-            {err && <div className="alert" style={{ margin: 8 }}>{err}</div>}
+            {err && <div className="alert" style={{ margin: 10 }}>{err}</div>}
             <form className="chat-input-row" onSubmit={send}>
               <input className="input" value={text} onChange={(e) => setText(e.target.value)}
                      placeholder="Type a message…" disabled={!active || active.status !== 'accepted'} />
-              <button className="btn btn-primary" disabled={!text.trim() || !active}>Send</button>
+              <button className="btn btn-primary" disabled={!text.trim() || !active}>
+                <span>➤</span> Send
+              </button>
             </form>
           </>
         )}

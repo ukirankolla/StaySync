@@ -43,6 +43,8 @@ export default function MatchCard({ match, onAction, onViewProfile }) {
     }
   }
 
+  const scoreColor = match.score >= 80 ? 'var(--gradient-cool)' : match.score >= 60 ? 'var(--gradient)' : 'var(--gradient-warm)'
+
   return (
     <div className="card match-card">
       {match.photos?.length > 0 && (
@@ -50,15 +52,17 @@ export default function MatchCard({ match, onAction, onViewProfile }) {
       )}
       <div className="match-head">
         <Avatar name={match.full_name} photo={match.photos?.[0]} />
-        <div>
-          <strong>{match.full_name}</strong>
-          {match.is_id_verified && <span className="badge badge-green" style={{ marginLeft: 6 }} title="Government ID verified">ID verified</span>}
-          {!match.is_id_verified && match.is_verified && <span className="badge" style={{ marginLeft: 6 }}>verified</span>}
-          <div className="muted" style={{ fontSize: '.85rem' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <strong style={{ fontSize: '1rem' }}>{match.full_name}</strong>
+            {match.is_id_verified && <span className="badge badge-green" title="Government ID verified" style={{ fontSize: '.65rem' }}>ID ✓</span>}
+            {!match.is_id_verified && match.is_verified && <span className="badge" style={{ fontSize: '.65rem' }}>verified</span>}
+          </div>
+          <div className="muted" style={{ fontSize: '.83rem', marginTop: 2 }}>
             {match.age && `${match.age} · `}{match.occupation && match.occupation.replace('_', ' ')} · {match.city}
           </div>
         </div>
-        <div className="score-badge">{Math.round(match.score)}%</div>
+        <div className="score-badge" style={{ background: scoreColor }}>{Math.round(match.score)}%</div>
       </div>
 
       <div className="match-meta">
@@ -67,7 +71,7 @@ export default function MatchCard({ match, onAction, onViewProfile }) {
         {match.move_in_date && <span className="chip chip-gray">moves {match.move_in_date}</span>}
       </div>
 
-      {match.bio && <p className="muted" style={{ fontSize: '.88rem', margin: 0 }}>{match.bio}</p>}
+      {match.bio && <p className="muted" style={{ fontSize: '.87rem', margin: 0, lineHeight: 1.5 }}>{match.bio}</p>}
 
       <div className="reasons">
         {match.reasons.slice(0, 4).map((r, i) => <div className="reason" key={i}>{r}</div>)}
@@ -77,7 +81,7 @@ export default function MatchCard({ match, onAction, onViewProfile }) {
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button className="btn btn-primary btn-sm" disabled={busy} onClick={connect}>
-          {busy ? 'Connecting…' : 'Connect'}
+          {busy ? 'Connecting…' : '🔗 Connect'}
         </button>
         <button className="btn btn-ghost btn-sm" onClick={() => onViewProfile?.(match.user_id)}>View profile</button>
         <button className="btn btn-ghost btn-sm" onClick={report} title="Report">Report</button>

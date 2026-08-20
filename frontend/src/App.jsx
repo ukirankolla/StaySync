@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext'
 import Navbar from './components/Navbar'
 import MessageToasts from './components/MessageToasts'
 import InstallApp from './components/InstallApp'
+import AiAssistant from './components/AiAssistant'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -58,6 +59,7 @@ export default function App() {
       </main>
       <MessageToasts />
       <InstallApp />
+      <AiAssistant />
     </div>
   )
 }

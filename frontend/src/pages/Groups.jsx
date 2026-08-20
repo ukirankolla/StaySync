@@ -42,7 +42,10 @@ export default function Groups() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
-        <h2>Roommate groups</h2>
+        <div>
+          <h2 style={{ marginBottom: 4 }}>Roommate groups</h2>
+          <div className="live-indicator"><span className="live-dot" /> Team up for flat hunting</div>
+        </div>
         <button className="btn btn-primary btn-sm" onClick={() => setShowForm((s) => !s)}>
           {showForm ? 'Close' : '+ New group'}
         </button>
@@ -54,6 +57,7 @@ export default function Groups() {
 
       {showForm && (
         <form className="card mb-16" onSubmit={create}>
+          <h3 style={{ marginBottom: 12 }}>Create a group</h3>
           <div className="form-row mb-8">
             <div className="field">
               <label>Group name</label>
@@ -62,7 +66,7 @@ export default function Groups() {
             <div className="field">
               <label>City</label>
               <input className="input" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}
-                     placeholder="Any city — e.g. Bengaluru, London, New York" required />
+                     placeholder="e.g. Bengaluru, Pune" required />
             </div>
           </div>
           <div className="form-row mb-8">
@@ -70,7 +74,7 @@ export default function Groups() {
               <label>Target area</label>
               <input className="input" value={form.target_area} onChange={(e) => setForm({ ...form, target_area: e.target.value })} />
             </div>
-            <div className="form-row" style={{ gap: 8 }}>
+            <div className="form-row" style={{ gap: 10 }}>
               <div className="field">
                 <label>Budget min</label>
                 <input className="input" type="number" value={form.budget_min} onChange={(e) => setForm({ ...form, budget_min: e.target.value })} />
@@ -86,13 +90,19 @@ export default function Groups() {
       )}
 
       {groups.length === 0 ? (
-        <div className="empty">No groups yet. Create one to start flat-hunting together.</div>
+        <div className="empty">
+          <div style={{ fontSize: '3rem', marginBottom: 12 }}>👥</div>
+          <div style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: 8 }}>No groups yet</div>
+          <p>Create one to start flat-hunting together.</p>
+        </div>
       ) : (
         <div className="grid grid-2">
           {groups.map((g) => (
             <div className="card" key={g.id}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ margin: 0 }}>{g.name}</h3>
+                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: '1.2rem' }}>👥</span> {g.name}
+                </h3>
                 <span className={`status-pill status-${g.status}`} style={{ fontSize: '.75rem' }}>{g.status}</span>
               </div>
               <div className="match-meta mt-8">
@@ -103,13 +113,13 @@ export default function Groups() {
               </div>
               <div className="mt-8" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {g.members.map((m) => (
-                  <div key={m.user_id} className="muted" style={{ fontSize: '.85rem' }}>
-                    {m.full_name} {m.is_owner && <span className="badge">owner</span>}
+                  <div key={m.user_id} className="muted" style={{ fontSize: '.85rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {m.full_name} {m.is_owner && <span className="badge" style={{ fontSize: '.65rem' }}>owner</span>}
                   </div>
                 ))}
               </div>
               {g.owner_id === g.members.find((m) => m.is_owner)?.user_id && (
-                <div className="mt-8" style={{ display: 'flex', gap: 8 }}>
+                <div className="mt-12" style={{ display: 'flex', gap: 8 }}>
                   <input className="input" placeholder="Invite by user ID" value={invite}
                          onChange={(e) => setInvite(e.target.value)} style={{ flex: 1 }} />
                   <button className="btn btn-ghost btn-sm" onClick={() => inviteTo(g.id)}>Invite</button>

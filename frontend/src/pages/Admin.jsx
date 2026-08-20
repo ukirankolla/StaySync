@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api/client'
 
-function Stat({ label, value }) {
-  return <div className="card stat"><div className="stat-value">{value}</div><div className="stat-label">{label}</div></div>
+function Stat({ label, value, icon }) {
+  return (
+    <div className="card stat">
+      <div style={{ fontSize: '1.5rem', marginBottom: 8 }}>{icon}</div>
+      <div className="stat-value">{value}</div>
+      <div className="stat-label">{label}</div>
+    </div>
+  )
 }
 
 export default function Admin() {
@@ -48,7 +54,7 @@ export default function Admin() {
   }
 
   const reviewVerification = async (id, action) => {
-    const note = action === 'reject' ? prompt('Reason for rejection (optional, shown to the user):') : null
+    const note = action === 'reject' ? prompt('Reason for rejection (optional):') : null
     if (action === 'reject' && note === null) return
     const qs = note != null ? `&note=${encodeURIComponent(note)}` : ''
     await api(`/admin/verifications/${id}/review?action=${action}${qs}`, { method: 'POST' })
@@ -56,25 +62,21 @@ export default function Admin() {
     loadVerifications()
   }
 
-  const toggle = (t) => setTab(t)
-
   const idLabel = (type) => ({
-    passport: 'Passport',
-    driving_license: "Driver's license",
-    national_id: 'National ID',
-    student_id: 'Student ID',
-    other: 'Other',
+    passport: 'Passport', driving_license: "Driver's license",
+    national_id: 'National ID', student_id: 'Student ID', other: 'Other',
   }[type] || type)
 
   return (
     <div>
-      <h2>Admin dashboard</h2>
+      <h2 style={{ marginBottom: 4 }}>Admin Dashboard</h2>
+      <div className="live-indicator mb-16"><span className="live-dot" /> Live analytics</div>
       {err && <div className="alert">{err}</div>}
       {notice && <div className="alert alert-success mt-8">{notice}</div>}
 
       <div className="tabs mt-16">
         {['overview', 'users', 'reports', 'verifications', 'listings'].map((t) => (
-          <button key={t} className={`btn btn-sm ${tab === t ? 'btn-primary' : 'btn-ghost'}`} onClick={() => toggle(t)}>
+          <button key={t} className={`btn btn-sm ${tab === t ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setTab(t)}>
             {t[0].toUpperCase() + t.slice(1)}
           </button>
         ))}
@@ -83,24 +85,24 @@ export default function Admin() {
       {tab === 'overview' && stats && (
         <div>
           <div className="admin-grid">
-            <Stat label="Registered users" value={stats.total_users} />
-            <Stat label="Questionnaire done" value={stats.questionnaire_completed} />
-            <Stat label="Profiles completed" value={stats.profiles_completed} />
-            <Stat label="Connections" value={stats.total_connections} />
-            <Stat label="Accepted" value={stats.accepted_connections} />
-            <Stat label="Messages" value={stats.total_messages} />
-            <Stat label="Groups" value={stats.total_groups} />
-            <Stat label="Listings" value={stats.total_listings} />
-            <Stat label="Approved listings" value={stats.approved_listings} />
-            <Stat label="Pending reports" value={stats.pending_reports} />
-            <Stat label="Pending ID verifications" value={stats.pending_verifications} />
-            <Stat label="ID verified users" value={stats.id_verified_users} />
-            <Stat label="Suspended users" value={stats.suspended_users} />
+            <Stat label="Registered users" value={stats.total_users} icon="👥" />
+            <Stat label="Questionnaire done" value={stats.questionnaire_completed} icon="📋" />
+            <Stat label="Profiles completed" value={stats.profiles_completed} icon="👤" />
+            <Stat label="Connections" value={stats.total_connections} icon="🔗" />
+            <Stat label="Accepted" value={stats.accepted_connections} icon="✓" />
+            <Stat label="Messages" value={stats.total_messages} icon="💬" />
+            <Stat label="Groups" value={stats.total_groups} icon="👥" />
+            <Stat label="Listings" value={stats.total_listings} icon="🏢" />
+            <Stat label="Approved listings" value={stats.approved_listings} icon="✅" />
+            <Stat label="Pending reports" value={stats.pending_reports} icon="⚠️" />
+            <Stat label="Pending ID verifications" value={stats.pending_verifications} icon="🪪" />
+            <Stat label="ID verified users" value={stats.id_verified_users} icon="🛡️" />
+            <Stat label="Suspended users" value={stats.suspended_users} icon="🚫" />
           </div>
 
           <div className="grid grid-2 mt-24">
             <div className="card">
-              <h3>Users by city</h3>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span>📍</span> Users by city</h3>
               {stats.users_by_city.length === 0 ? <p className="muted">No data</p> : (
                 <table className="table"><tbody>
                   {stats.users_by_city.map((c) => (
@@ -110,7 +112,7 @@ export default function Admin() {
               )}
             </div>
             <div className="card">
-              <h3>Registrations per day</h3>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span>📈</span> Registrations per day</h3>
               {stats.registrations_per_day.length === 0 ? <p className="muted">No data</p> : (
                 <table className="table"><tbody>
                   {stats.registrations_per_day.map((r) => (
@@ -132,13 +134,12 @@ export default function Admin() {
                 <tr key={u.id}>
                   <td>{u.id}</td>
                   <td>{u.email || u.phone}</td>
-                  <td>{u.role}</td>
+                  <td><span className="chip chip-gray">{u.role}</span></td>
                   <td>{u.is_suspended ? <span className="status-pill status-declined">suspended</span> : <span className="status-pill status-accepted">active</span>}</td>
                   <td>{new Date(u.created_at).toLocaleDateString()}</td>
                   <td>
                     {u.role !== 'admin' && (
-                      <button className="btn btn-ghost btn-sm"
-                              onClick={() => suspend(u.id, !u.is_suspended)}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => suspend(u.id, !u.is_suspended)}>
                         {u.is_suspended ? 'Restore' : 'Suspend'}
                       </button>
                     )}
@@ -161,7 +162,7 @@ export default function Admin() {
                     <td>{r.id}</td>
                     <td>{r.target_type} #{r.target_user_id || r.listing_id}</td>
                     <td>{r.reason}</td>
-                    <td><span className={`chip ${r.severity === 'high' ? 'chip' : 'chip-gray'}`} style={r.severity === 'high' ? { background: '#fee2e2', color: '#991b1b' } : r.severity === 'medium' ? { background: '#fef9c3', color: '#854d0e' } : {}}>{r.severity}</span></td>
+                    <td><span className={`chip ${r.severity === 'high' ? '' : 'chip-gray'}`} style={r.severity === 'high' ? { background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.2)' } : r.severity === 'medium' ? { background: 'rgba(245, 158, 11, 0.15)', color: '#fcd34d', border: '1px solid rgba(245, 158, 11, 0.2)' } : {}}>{r.severity}</span></td>
                     <td>{r.status}</td>
                     <td>{new Date(r.created_at).toLocaleDateString()}</td>
                     <td>
@@ -223,7 +224,7 @@ export default function Admin() {
                   <td>{l.title}</td>
                   <td>{l.city}{l.area ? ` · ${l.area}` : ''}</td>
                   <td>₹{l.rent.toLocaleString('en-IN')}</td>
-                  <td>{l.status}</td>
+                  <td><span className="chip chip-gray">{l.status}</span></td>
                   <td>
                     {l.status === 'pending' && (
                       <div style={{ display: 'flex', gap: 6 }}>

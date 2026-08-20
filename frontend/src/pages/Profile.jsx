@@ -61,12 +61,7 @@ export default function Profile() {
       setIsVerified(p.is_verified)
     }).catch(() => {})
     api('/verification/me').then((v) => {
-      if (v) {
-        setIdVerify(v)
-        setIdType(v.id_type)
-        setIdNumber(v.id_number || '')
-        setIdDocUrl(v.document_url)
-      }
+      if (v) { setIdVerify(v); setIdType(v.id_type); setIdNumber(v.id_number || ''); setIdDocUrl(v.document_url) }
     }).catch(() => {})
     api('/matching/agents/onboarding').then(setProgress).catch(() => {})
   }, [user])
@@ -77,11 +72,9 @@ export default function Profile() {
   const uploadPhoto = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setUploading(true)
-    setError('')
+    setUploading(true); setError('')
     try {
-      const fd = new FormData()
-      fd.append('file', file)
+      const fd = new FormData(); fd.append('file', file)
       const res = await fetch('/api/upload/image', {
         method: 'POST',
         headers: { Authorization: `Bearer ${localStorage.getItem('staysync_token')}` },
@@ -90,46 +83,29 @@ export default function Profile() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || 'Upload failed')
       setForm((f) => ({ ...f, photos: [...(f.photos || []), data.url] }))
-    } catch (err2) {
-      setError(err2.message)
-    } finally {
-      setUploading(false)
-      e.target.value = ''
-    }
+    } catch (err2) { setError(err2.message) } finally { setUploading(false); e.target.value = '' }
   }
 
   const removePhoto = (url) => setForm((f) => ({ ...f, photos: (f.photos || []).filter((p) => p !== url) }))
 
   const requestVerify = async () => {
-    setVerifyMsg('')
-    setOtpCode('')
-    try {
-      await api('/profile/verify/request', { method: 'POST', body: {} })
-      setOtpStep('sent')
-    } catch (err) {
-      setVerifyMsg(err.message)
-    }
+    setVerifyMsg(''); setOtpCode('')
+    try { await api('/profile/verify/request', { method: 'POST', body: {} }); setOtpStep('sent') }
+    catch (err) { setVerifyMsg(err.message) }
   }
 
   const confirmVerify = async () => {
     try {
       await api('/profile/verify/confirm', { method: 'POST', body: { code: otpCode } })
-      setIsVerified(true)
-      setOtpStep('idle')
-      setVerifyMsg('Your profile is now verified ✓')
-    } catch (err) {
-      setVerifyMsg(err.message)
-    }
+      setIsVerified(true); setOtpStep('idle'); setVerifyMsg('Your profile is now verified ✓')
+    } catch (err) { setVerifyMsg(err.message) }
   }
 
   const uploadIdDoc = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setIdUploading(true)
-    setIdMsg('')
+    const file = e.target.files?.[0]; if (!file) return
+    setIdUploading(true); setIdMsg('')
     try {
-      const fd = new FormData()
-      fd.append('file', file)
+      const fd = new FormData(); fd.append('file', file)
       const res = await fetch('/api/upload/document', {
         method: 'POST',
         headers: { Authorization: `Bearer ${localStorage.getItem('staysync_token')}` },
@@ -138,47 +114,30 @@ export default function Profile() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || 'Upload failed')
       setIdDocUrl(data.url)
-    } catch (err2) {
-      setIdMsg(err2.message)
-    } finally {
-      setIdUploading(false)
-      e.target.value = ''
-    }
+    } catch (err2) { setIdMsg(err2.message) } finally { setIdUploading(false); e.target.value = '' }
   }
 
   const submitIdVerification = async () => {
-    setIdMsg('')
-    setIdSubmitting(true)
+    setIdMsg(''); setIdSubmitting(true)
     try {
       const v = await api('/verification/submit', {
         method: 'POST',
         body: { id_type: idType, id_number: idNumber || null, document_url: idDocUrl },
       })
-      setIdVerify(v)
-      setIdMsg('Verification submitted. An admin will review your document.')
-    } catch (err) {
-      setIdMsg(err.message)
-    } finally {
-      setIdSubmitting(false)
-    }
+      setIdVerify(v); setIdMsg('Verification submitted. An admin will review your document.')
+    } catch (err) { setIdMsg(err.message) } finally { setIdSubmitting(false) }
   }
 
   const changePassword = async (e) => {
-    e.preventDefault()
-    setPwMsg('')
+    e.preventDefault(); setPwMsg('')
     try {
       await api('/auth/change-password', { method: 'POST', body: pw })
-      setPwMsg('Password updated')
-      setPw({ current_password: '', new_password: '' })
-    } catch (err) {
-      setPwMsg(err.message)
-    }
+      setPwMsg('Password updated'); setPw({ current_password: '', new_password: '' })
+    } catch (err) { setPwMsg(err.message) }
   }
 
   const submit = async (e) => {
-    e.preventDefault()
-    setError('')
-    setBusy(true)
+    e.preventDefault(); setError(''); setBusy(true)
     try {
       const payload = {
         full_name: form.full_name, age: form.age === '' ? null : Number(form.age),
@@ -191,33 +150,27 @@ export default function Profile() {
       }
       await api('/profile/me', { method: 'PUT', body: payload })
       setSaved(true)
-      const p = await api('/matching/agents/onboarding')
-      setProgress(p)
+      const p = await api('/matching/agents/onboarding'); setProgress(p)
       setTimeout(() => setSaved(false), 2500)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setBusy(false)
-    }
+    } catch (err) { setError(err.message) } finally { setBusy(false) }
   }
 
   return (
     <div className="mt-8">
+      {/* Verification Section */}
       <div className="card mb-16" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <strong>Profile verification</strong>
+          <strong style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>🛡️</span> Profile verification
+          </strong>
           <div className="muted mt-4">
             {isVerified
               ? <span style={{ color: 'var(--success)' }}>✓ Verified — your identity is confirmed.</span>
               : 'Verify your email to earn a verified badge and boost trust with roommates.'}
           </div>
         </div>
-        {otpStep !== 'idle' && (
-          <p className="muted" style={{ fontSize: '.8rem' }}>Check your inbox for the verification code.</p>
-        )}
-        {!isVerified && otpStep === 'idle' && (
-          <button className="btn btn-sm" onClick={requestVerify}>Verify now</button>
-        )}
+        {otpStep !== 'idle' && <p className="muted" style={{ fontSize: '.8rem' }}>Check your inbox for the verification code.</p>}
+        {!isVerified && otpStep === 'idle' && <button className="btn btn-sm" onClick={requestVerify}>Verify now</button>}
         {otpStep === 'sent' && (
           <div className="field" style={{ display: 'flex', gap: 8, margin: 0, alignItems: 'end' }}>
             <div>
@@ -230,22 +183,24 @@ export default function Profile() {
         {verifyMsg && <div className="alert alert-success" style={{ margin: 0 }}>{verifyMsg}</div>}
       </div>
 
+      {/* ID Verification */}
       <div className="card mb-16" style={{ maxWidth: 640 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <strong>Identity verification (Government ID)</strong>
+            <strong style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>🪪</span> Identity verification (Government ID)
+            </strong>
             <div className="muted mt-4">
               {idVerify?.status === 'approved' && <span style={{ color: 'var(--success)' }}>✓ ID verified — you show a verified trust badge to roommates.</span>}
               {idVerify?.status === 'pending' && 'Your document is under review by our team.'}
               {idVerify?.status === 'rejected' && <span style={{ color: 'var(--danger)' }}>Rejected{idVerify.admin_note ? `: ${idVerify.admin_note}` : ''}. Upload a clearer document to reapply.</span>}
-              {!idVerify && 'Upload a government ID (passport, driving licence, national ID…) so we can confirm you are a genuine person. Reviewed by our team — you get a verified trust badge.'}
+              {!idVerify && 'Upload a government ID so we can confirm you are a genuine person. Reviewed by our AI + team.'}
             </div>
           </div>
           {idVerify?.status === 'approved'
             ? <span className="status-pill status-accepted">verified</span>
             : <span className={`status-pill ${idVerify?.status === 'rejected' ? 'status-declined' : 'status-pending'}`}>{idVerify?.status || 'not submitted'}</span>}
         </div>
-
         {(idVerify?.status !== 'pending' || !idVerify) && (
           <div className="mt-16" style={{ display: 'grid', gap: 12 }}>
             <div className="form-row">
@@ -265,9 +220,7 @@ export default function Profile() {
               <label>ID document (photo or scan)</label>
               {idDocUrl && (
                 <div className="photo-strip mb-8">
-                  <a href={idDocUrl} target="_blank" rel="noreferrer">
-                    <img src={idDocUrl} alt="ID document" className="photo-thumb" />
-                  </a>
+                  <a href={idDocUrl} target="_blank" rel="noreferrer"><img src={idDocUrl} alt="ID" className="photo-thumb" /></a>
                 </div>
               )}
               <div className="photo-upload">
@@ -280,30 +233,31 @@ export default function Profile() {
             <button className="btn btn-primary" disabled={idSubmitting || !idDocUrl} onClick={submitIdVerification}>
               {idSubmitting ? 'Submitting…' : idVerify ? 'Resubmit verification' : 'Submit for verification'}
             </button>
-            <p className="muted" style={{ fontSize: '.8rem', margin: 0 }}>
-              Your document is only visible to you and our moderation team. It is never shown on your public profile.
-            </p>
+            <p className="muted" style={{ fontSize: '.8rem', margin: 0 }}>Your document is only visible to you and our moderation team.</p>
           </div>
         )}
       </div>
 
+      {/* Progress */}
       {progress && (
         <div className="card mb-16">
-          <strong>Profile completion: {progress.progress}%</strong>
+          <strong style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>📊</span> Profile completion: {progress.progress}%
+          </strong>
           <div className="q-progress mt-8"><div className="q-progress-fill" style={{ width: `${progress.progress}%` }} /></div>
           <p className="muted mb-8">{progress.tip}</p>
         </div>
       )}
+
+      {/* Profile Form */}
       <form className="form card" onSubmit={submit} style={{ maxWidth: 640 }}>
         <h2 className="center">Your profile</h2>
         {error && <div className="alert">{error}</div>}
         {saved && <div className="alert alert-success">Saved!</div>}
-
         <div className="field">
           <label>Full name</label>
           <input className="input" value={form.full_name} onChange={set('full_name')} required />
         </div>
-
         <div className="form-row">
           <div className="field">
             <label>Age</label>
@@ -318,26 +272,21 @@ export default function Profile() {
             </select>
           </div>
         </div>
-
         <div className="field">
           <label>Occupation detail</label>
           <input className="input" value={form.occupation_detail} onChange={set('occupation_detail')}
                  placeholder="e.g. Software Engineer, MBA student" />
         </div>
-
         <div className="form-row">
           <div className="field">
             <label>City / State / Country</label>
-            <input className="input" value={form.city} onChange={set('city')}
-                   placeholder="Anywhere — e.g. Bengaluru, London, New York" />
+            <input className="input" value={form.city} onChange={set('city')} placeholder="Anywhere" />
           </div>
           <div className="field">
             <label>Preferred area</label>
-            <input className="input" value={form.preferred_area} onChange={set('preferred_area')}
-                   placeholder="e.g. Koramangala" />
+            <input className="input" value={form.preferred_area} onChange={set('preferred_area')} placeholder="e.g. Koramangala" />
           </div>
         </div>
-
         <div className="form-row">
           <div className="field">
             <label>Budget min (₹/mo)</label>
@@ -348,18 +297,15 @@ export default function Profile() {
             <input className="input" type="number" value={form.budget_max} onChange={setNum('budget_max')} placeholder="18000" />
           </div>
         </div>
-
         <div className="field">
           <label>Move-in date</label>
           <input className="input" type="date" value={form.move_in_date} onChange={set('move_in_date')} />
         </div>
-
         <div className="field">
           <label>About you</label>
           <textarea className="input" rows={3} value={form.bio} onChange={set('bio')}
                     placeholder="Short intro — routines, interests, what you're looking for" />
         </div>
-
         <div className="field">
           <label>Photos</label>
           {form.photos?.length > 0 && (
@@ -368,7 +314,7 @@ export default function Profile() {
                 <div key={p} style={{ position: 'relative' }}>
                   <img src={p} alt="" className="photo-thumb" />
                   <button type="button" onClick={() => removePhoto(p)}
-                          style={{ position: 'absolute', top: -6, right: -6, borderRadius: '50%', background: 'var(--danger)', color: '#fff', border: 'none', width: 20, height: 20, cursor: 'pointer' }}>×</button>
+                          style={{ position: 'absolute', top: -6, right: -6, borderRadius: '50%', background: 'var(--danger)', color: '#fff', border: 'none', width: 22, height: 22, cursor: 'pointer', fontSize: '.7rem' }}>×</button>
                 </div>
               ))}
             </div>
@@ -379,17 +325,13 @@ export default function Profile() {
             {uploading && <span className="muted">Uploading…</span>}
           </div>
         </div>
-
         <label className="form-note" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <input type="checkbox" checked={form.is_visible} onChange={(e) => setForm((f) => ({ ...f, is_visible: e.target.checked }))} />
           Show my profile to potential roommates
         </label>
-
         <hr className="mt-16 mb-16" />
         <strong>Privacy — what others can see about you</strong>
-        <p className="muted mb-8" style={{ fontSize: '.85rem' }}>
-          You always control your info. Turning a field off hides it from other users' views of your profile.
-        </p>
+        <p className="muted mb-8" style={{ fontSize: '.85rem' }}>You always control your info.</p>
         <div className="grid grid-2">
           {PRIVACY_FIELDS.map(([key, label]) => (
             <label key={key} className="form-note" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -399,15 +341,15 @@ export default function Profile() {
             </label>
           ))}
         </div>
-
         <button className="btn btn-primary btn-block" disabled={busy}>{busy ? 'Saving…' : 'Save profile'}</button>
         <button type="button" className="btn btn-ghost btn-block" onClick={() => navigate('/questionnaire')}>
-          Complete lifestyle questionnaire →
+          🤖 Complete lifestyle questionnaire →
         </button>
       </form>
 
+      {/* Password */}
       <form className="card mt-16" style={{ maxWidth: 640 }} onSubmit={changePassword}>
-        <h3>Change password</h3>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span>🔑</span> Change password</h3>
         {pwMsg && <div className={pwMsg.includes('updated') ? 'alert alert-success' : 'alert'}>{pwMsg}</div>}
         <div className="form-row">
           <div className="field">

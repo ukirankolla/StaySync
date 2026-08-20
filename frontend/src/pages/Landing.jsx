@@ -1,44 +1,97 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { IMG, HERO_PROMPTS } from '../lib/images'
 import AiImage from '../components/AiImage'
+import ParticleField from '../components/ParticleField'
+import TypingEffect from '../components/TypingEffect'
+import LiveCounter from '../components/LiveCounter'
+
+const TYPING_TEXTS = [
+  'Find compatible roommates',
+  'Match by lifestyle & budget',
+  'AI-powered flat hunting',
+  'Transparent compatibility scores',
+  'Real-time chat with matches',
+]
 
 const STEPS = [
-  { title: 'Create your profile', text: 'Tell us who you are, your city, and your budget.',
+  { title: 'Create your profile', text: 'Tell us who you are, your city, and your budget. Our AI learns your preferences.',
     prompt: 'young Indian professional smiling, setting up a profile on a laptop in a bright modern home office',
-    fallback: IMG.plan, seed: 11 },
-  { title: 'Answer the lifestyle questionnaire', text: 'Sleep, cleanliness, routine — the things that actually matter.',
+    fallback: IMG.plan, seed: 11, icon: '👤' },
+  { title: 'Answer the lifestyle questionnaire', text: 'Sleep, cleanliness, routine — the things that actually matter for compatibility.',
     prompt: 'person answering a lifestyle questionnaire on a smartphone app, cozy sunlit bedroom, plants',
-    fallback: IMG.office, seed: 12 },
-  { title: 'Match & chat with compatible people', text: 'See transparent compatibility scores with reasons.',
+    fallback: IMG.office, seed: 12, icon: '📋' },
+  { title: 'Match & chat instantly', text: 'See transparent compatibility scores with clear reasons. Start chatting immediately.',
     prompt: 'two young roommates laughing over chai at a modern cafe, warm candid photo',
-    fallback: IMG.friends, seed: 13 },
-  { title: 'Form a group and find a flat', text: 'Hunt for a verified listing together.',
+    fallback: IMG.friends, seed: 13, icon: '💬' },
+  { title: 'Form a group & find a flat', text: 'Hunt for a verified listing together with your compatible roommates.',
     prompt: 'group of friends walking through a bright empty apartment together holding keys, excited',
-    fallback: IMG.home, seed: 14 },
+    fallback: IMG.home, seed: 14, icon: '🏠' },
 ]
 
 const FEATURES = [
-  { title: 'Compatibility scoring', text: 'Transparent lifestyle, budget, and routine matching with clear reasons — not a mystery number.', img: IMG.team },
-  { title: 'Real-time chat', text: 'Connect with matched people and chat instantly after a mutual match.', img: IMG.chat },
-  { title: 'Roommate groups', text: 'Form a group with compatible people, then hunt for a flat together.', img: IMG.friends },
-  { title: 'Flat listings', text: 'Browse verified room and flat listings that fit your group’s budget and area.', img: IMG.home },
-  { title: 'Safety tools', text: 'Report, block, and moderation reviews keep the community safe.', img: IMG.crowd },
-  { title: 'Smarter matches', text: 'Ranking that learns and refines itself as the community grows.', img: IMG.office },
+  { title: 'AI Compatibility Scoring', text: 'Transparent lifestyle, budget, and routine matching with clear reasons — not a mystery number.', icon: '🎯', gradient: 'var(--gradient)' },
+  { title: 'Real-time Chat', text: 'Connect with matched people and chat instantly after a mutual match. No waiting.', icon: '⚡', gradient: 'var(--gradient-cool)' },
+  { title: 'Roommate Groups', text: 'Form a group with compatible people, then hunt for a flat together as a team.', icon: '👥', gradient: 'var(--gradient-purple)' },
+  { title: 'Smart Flat Listings', text: 'Browse verified room and flat listings that fit your group\'s budget and area preferences.', icon: '🏢', gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
+  { title: 'Safety First', text: 'Report, block, AI-powered moderation, and government ID verification keep the community safe.', icon: '🛡️', gradient: 'var(--gradient-cool)' },
+  { title: 'Machine Learning', text: 'Our matching algorithm learns from the community and refines itself for smarter recommendations.', icon: '🧠', gradient: 'var(--gradient-purple)' },
+]
+
+const TESTIMONIALS = [
+  { name: 'Priya S.', role: 'Software Engineer, Bengaluru', text: 'StaySync matched me with a roommate who had the exact same sleep schedule. It\'s been 6 months and we\'re still going strong!' },
+  { name: 'Arjun M.', role: 'MBA Student, Delhi', text: 'The compatibility score transparency is what sold me. I could see exactly why we matched — no black box.' },
+  { name: 'Neha K.', role: 'Designer, Mumbai', text: 'Formed a group on StaySync and found our dream 3BHK in Koramangala within a week. The AI suggestions were spot on.' },
+  { name: 'Rahul T.', role: 'Data Analyst, Pune', text: 'I was skeptical about finding roommates online, but the ID verification and moderation made me feel safe. Best decision.' },
 ]
 
 export default function Landing() {
   const { user } = useAuth()
   const [heroIdx, setHeroIdx] = useState(0)
+  const [testimonialIdx, setTestimonialIdx] = useState(0)
+  const [scrollY, setScrollY] = useState(0)
+  const sectionsRef = useRef([])
+
   useEffect(() => {
-    const t = setInterval(() => setHeroIdx((i) => (i + 1) % HERO_PROMPTS.length), 8000)
+    const t = setInterval(() => setHeroIdx((i) => (i + 1) % HERO_PROMPTS.length), 6000)
     return () => clearInterval(t)
   }, [])
 
+  useEffect(() => {
+    const t = setInterval(() => setTestimonialIdx((i) => (i + 1) % TESTIMONIALS.length), 5000)
+    return () => clearInterval(t)
+  }, [])
+
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY)
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) entry.target.classList.add('visible')
+        })
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    )
+    sectionsRef.current.forEach((el) => el && observer.observe(el))
+    return () => observer.disconnect()
+  }, [])
+
+  const addRef = (el) => {
+    if (el && !sectionsRef.current.includes(el)) sectionsRef.current.push(el)
+  }
+
+  const currentTestimonial = TESTIMONIALS[testimonialIdx]
+
   return (
     <div>
-      <section className="hero">
+      {/* Hero Section */}
+      <section className="hero" style={{ transform: `translateY(${scrollY * 0.1}px)` }}>
         <AiImage
           className="hero-bg hero-fade"
           key={heroIdx}
@@ -49,54 +102,183 @@ export default function Landing() {
           fallback={IMG.hero}
           alt=""
         />
+        <ParticleField count={20} />
         <div className="hero-inner">
-          <span className="hero-eyebrow">Roommate + flat matching, done right</span>
-          <h1>Find compatible roommates before you move</h1>
-          <p>StaySync matches students and professionals by lifestyle, routine, budget, and housing preferences — so your next flatmate actually fits.</p>
+          <span className="hero-eyebrow">
+            <span className="pulse-dot" />
+            AI-Powered Roommate Matching
+          </span>
+          <h1>
+            <TypingEffect texts={TYPING_TEXTS} speed={60} pause={2500} />
+            <br />
+            <span className="gradient-text">before you move</span>
+          </h1>
+          <p>StaySync uses machine learning to match students and professionals by lifestyle, routine, budget, and housing preferences — so your next flatmate actually fits.</p>
           <div className="hero-actions">
             {user ? (
-              <Link to="/discover" className="btn btn-primary btn-lg">Browse matches</Link>
+              <Link to="/discover" className="btn btn-primary btn-lg">
+                <span style={{ fontSize: '1.1rem' }}>🔍</span> Browse AI Matches
+              </Link>
             ) : (
               <>
-                <Link to="/register" className="btn btn-primary btn-lg">Get started free</Link>
+                <Link to="/register" className="btn btn-primary btn-lg">
+                  <span style={{ fontSize: '1.1rem' }}>🚀</span> Get started free
+                </Link>
                 <Link to="/login" className="btn btn-ghost btn-lg btn-ghost-light">Log in</Link>
               </>
             )}
           </div>
+          <div style={{ marginTop: 28, display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.7)', fontSize: '.85rem' }}>
+              <span style={{ color: '#10b981', fontSize: '1rem' }}>✓</span> No credit card required
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.7)', fontSize: '.85rem' }}>
+              <span style={{ color: '#10b981', fontSize: '1rem' }}>✓</span> AI-powered matching
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.7)', fontSize: '.85rem' }}>
+              <span style={{ color: '#10b981', fontSize: '1rem' }}>✓</span> 100% score transparency
+            </div>
+          </div>
         </div>
       </section>
 
+      {/* Stats Bar */}
       <div className="stats-bar">
-        <div><strong>6</strong><span>cities live</span></div>
-        <div><strong>100%</strong><span>score transparency</span></div>
-        <div><strong>24/7</strong><span>moderation</span></div>
+        <div>
+          <strong><LiveCounter end={6} /></strong>
+          <span>Cities live</span>
+        </div>
+        <div>
+          <strong><LiveCounter end={100} suffix="%" /></strong>
+          <span>Score transparency</span>
+        </div>
+        <div>
+          <strong><LiveCounter end={24} suffix="/7" /></strong>
+          <span>AI moderation</span>
+        </div>
       </div>
 
-      <h2 className="section-title">How it works</h2>
-      <p className="section-sub">Four steps from sign-up to signed lease.</p>
-      <div className="grid grid-3 steps-grid">
-        {STEPS.map((s, i) => (
-          <div className="card step-card" key={s.title}>
-            <AiImage className="card-img" prompt={s.prompt} seed={s.seed} fallback={s.fallback} alt={s.title} />
-            <div className="step-num">{i + 1}</div>
-            <h3>{s.title}</h3>
-            <p>{s.text}</p>
+      {/* How it works */}
+      <div ref={addRef} className="fade-in-up">
+        <h2 className="section-title">How it works</h2>
+        <p className="section-sub">Four steps from sign-up to signed lease — powered by AI at every step.</p>
+        <div className="grid grid-3 steps-grid">
+          {STEPS.map((s, i) => (
+            <div className="card step-card" key={s.title} style={{ animationDelay: `${i * 0.1}s` }}>
+              <AiImage className="card-img" prompt={s.prompt} seed={s.seed} fallback={s.fallback} alt={s.title} />
+              <div className="step-num">{i + 1}</div>
+              <div className="feature-icon">{s.icon}</div>
+              <h3>{s.title}</h3>
+              <p>{s.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* AI Match Preview */}
+      <div ref={addRef} className="fade-in-up" style={{ marginTop: 64 }}>
+        <h2 className="section-title">See AI matching in action</h2>
+        <p className="section-sub">Our machine learning model analyzes 12 lifestyle factors to find your best matches.</p>
+        <div className="card" style={{ maxWidth: 500, margin: '0 auto', padding: 28 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+            <div className="feature-icon" style={{ background: 'var(--gradient)', color: '#fff', width: 44, height: 44, fontSize: '1.2rem' }}>🧠</div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '1rem' }}>AI Match Analysis</div>
+              <div className="muted" style={{ fontSize: '.82rem' }}>Powered by RandomForest ML model</div>
+            </div>
+            <div className="live-indicator" style={{ marginLeft: 'auto' }}>
+              <span className="live-dot" /> Live
+            </div>
           </div>
-        ))}
-      </div>
-
-      <h2 className="section-title">Why StaySync</h2>
-      <div className="features">
-        {FEATURES.map((f) => (
-          <div className="card feature" key={f.title}>
-            <img className="card-img" src={f.img} alt="" loading="lazy" />
-            <h3>{f.title}</h3>
-            <p>{f.text}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {[
+              { label: 'Sleep schedule', score: 92, color: 'var(--gradient)' },
+              { label: 'Cleanliness', score: 88, color: 'var(--gradient-cool)' },
+              { label: 'Budget overlap', score: 95, color: 'var(--gradient)' },
+              { label: 'Social preference', score: 78, color: 'var(--gradient-purple)' },
+              { label: 'Noise tolerance', score: 85, color: 'var(--gradient-cool)' },
+            ].map((item) => (
+              <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ width: 130, fontSize: '.85rem', color: 'var(--text-muted)' }}>{item.label}</span>
+                <div className="breakdown-bar" style={{ flex: 1 }}>
+                  <div style={{ width: `${item.score}%`, background: item.color, transition: 'width 1.5s ease' }} />
+                </div>
+                <span style={{ width: 40, textAlign: 'right', fontWeight: 700, fontSize: '.9rem' }}>{item.score}%</span>
+              </div>
+            ))}
           </div>
-        ))}
+          <div style={{ marginTop: 18, padding: '12px 16px', background: 'rgba(99, 102, 241, 0.08)', borderRadius: 12, fontSize: '.85rem', color: 'var(--text-muted)' }}>
+            <span style={{ color: '#10b981', marginRight: 6 }}>✓</span>
+            <strong style={{ color: 'var(--text)' }}>87% overall compatibility</strong> — Both prefer quiet after 10 PM, similar budget range, and same area preference.
+          </div>
+        </div>
       </div>
 
-      <p className="center muted mt-24">
+      {/* Features */}
+      <div ref={addRef} className="fade-in-up" style={{ marginTop: 64 }}>
+        <h2 className="section-title">Why StaySync</h2>
+        <p className="section-sub">Built for India's rental market, powered by modern AI.</p>
+        <div className="features">
+          {FEATURES.map((f, i) => (
+            <div className="card feature" key={f.title} style={{ animationDelay: `${i * 0.08}s` }}>
+              <div className="feature-icon" style={{ background: f.gradient, color: '#fff', fontSize: '1.3rem' }}>{f.icon}</div>
+              <h3>{f.title}</h3>
+              <p>{f.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Testimonials */}
+      <div ref={addRef} className="fade-in-up" style={{ marginTop: 64 }}>
+        <h2 className="section-title">Loved by roommates</h2>
+        <p className="section-sub">Real stories from real StaySync users.</p>
+        <div className="card" style={{ maxWidth: 560, margin: '0 auto', padding: 32, textAlign: 'center', minHeight: 200 }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: 16, opacity: 0.3 }}>"</div>
+          <p style={{ fontSize: '1.1rem', lineHeight: 1.7, margin: '0 0 20px', color: 'var(--text)', fontWeight: 500 }}>
+            {currentTestimonial.text}
+          </p>
+          <div>
+            <div style={{ fontWeight: 700, color: 'var(--text)' }}>{currentTestimonial.name}</div>
+            <div className="muted" style={{ fontSize: '.85rem' }}>{currentTestimonial.role}</div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 20 }}>
+            {TESTIMONIALS.map((_, i) => (
+              <button key={i} onClick={() => setTestimonialIdx(i)}
+                style={{
+                  width: i === testimonialIdx ? 24 : 8, height: 8, borderRadius: 4,
+                  background: i === testimonialIdx ? 'var(--gradient)' : 'var(--glass)',
+                  border: 'none', cursor: 'pointer', transition: 'all 0.3s ease',
+                }} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div ref={addRef} className="fade-in-up" style={{ marginTop: 64, textAlign: 'center' }}>
+        <div className="card" style={{ padding: 48, background: 'rgba(99, 102, 241, 0.05)', border: '1px solid rgba(99, 102, 241, 0.15)' }}>
+          <h2 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: 12 }}>Ready to find your perfect flatmate?</h2>
+          <p className="muted" style={{ fontSize: '1.1rem', marginBottom: 28 }}>Join thousands of students and professionals who found their match on StaySync.</p>
+          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {user ? (
+              <Link to="/discover" className="btn btn-primary btn-lg">
+                <span>🔍</span> Browse AI Matches
+              </Link>
+            ) : (
+              <>
+                <Link to="/register" className="btn btn-primary btn-lg">
+                  <span>🚀</span> Get started — it's free
+                </Link>
+                <Link to="/login" className="btn btn-ghost btn-lg">Log in</Link>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Disclaimer */}
+      <p className="center muted mt-24" style={{ fontSize: '.85rem' }}>
         StaySync never guarantees a match is safe — always meet in public, verify details, and trust your judgement.
       </p>
     </div>

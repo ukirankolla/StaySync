@@ -13,7 +13,10 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <Link to={user ? '/discover' : '/'} className="brand">🏠 StaySync</Link>
+      <Link to={user ? '/discover' : '/'} className="brand">
+        <span className="brand-icon">🏠</span>
+        StaySync
+      </Link>
       <div className="nav-links">
         {user ? (
           <>

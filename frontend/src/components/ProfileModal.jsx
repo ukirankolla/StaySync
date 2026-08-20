@@ -60,7 +60,7 @@ export default function ProfileModal({ userId, onClose, onConnected }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <Avatar name={profile?.full_name} photo={profile?.photos?.[0]} size={56} />
             <div>
               <h3 style={{ margin: 0 }}>{profile?.full_name || 'Profile'}</h3>
@@ -76,7 +76,7 @@ export default function ProfileModal({ userId, onClose, onConnected }) {
         {profile && (
           <>
             {profile.photos.length > 0 && (
-              <div className="photo-strip">
+              <div className="photo-strip" style={{ marginTop: 16 }}>
                 {profile.photos.map((p, i) => <img key={i} src={p} alt="" className="photo-thumb" />)}
               </div>
             )}
@@ -86,39 +86,43 @@ export default function ProfileModal({ userId, onClose, onConnected }) {
               {profile.occupation_detail && <span className="chip chip-gray">{profile.occupation_detail}</span>}
               <span className="chip chip-gray">{profile.city}</span>
               {profile.preferred_area && <span className="chip chip-gray">{profile.preferred_area}</span>}
-              {profile.is_id_verified && <span className="chip chip-green" title="Government ID verified">ID verified</span>}
-              {!profile.is_id_verified && profile.is_verified && <span className="chip chip-green">verified</span>}
             </div>
             {profile.budget_min != null && (
               <p className="muted mt-8">Budget ₹{profile.budget_min.toLocaleString('en-IN')}–{profile.budget_max?.toLocaleString('en-IN')}/mo · moves {profile.move_in_date || 'flexible'}</p>
             )}
-            {profile.bio && <p className="mt-8">{profile.bio}</p>}
+            {profile.bio && <p className="mt-8" style={{ lineHeight: 1.6 }}>{profile.bio}</p>}
 
             {score && (
               <div className="mt-16">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h4 style={{ margin: 0 }}>Compatibility</h4>
+                  <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span>🧠</span> AI Compatibility
+                  </h4>
                   <span className="score-badge">{Math.round(score.score)}%</span>
                 </div>
                 <div className="breakdown mt-8">
                   {Object.entries(score.category_scores || {}).map(([key, val]) => (
                     <div key={key} className="breakdown-row">
-                      <span style={{ width: 130 }}>{CATEGORY_LABELS[key] || key}</span>
+                      <span style={{ width: 130, color: 'var(--text-muted)' }}>{CATEGORY_LABELS[key] || key}</span>
                       <div className="breakdown-bar"><div style={{ width: `${val}%` }} /></div>
-                      <span className="muted" style={{ width: 44, textAlign: 'right' }}>{Math.round(val)}%</span>
+                      <span className="muted" style={{ width: 44, textAlign: 'right', fontWeight: 600 }}>{Math.round(val)}%</span>
                     </div>
                   ))}
                 </div>
                 <div className="reasons mt-8">
                   {(score.reasons || []).map((r, i) => <div className="reason" key={i}>{r}</div>)}
                 </div>
-                <p className="muted mt-8" style={{ fontSize: '.8rem' }}>{score.explanation?.summary}</p>
+                {score.explanation?.summary && (
+                  <div style={{ marginTop: 12, padding: '12px 16px', background: 'rgba(99, 102, 241, 0.06)', borderRadius: 12, fontSize: '.85rem', color: 'var(--text-muted)' }}>
+                    🤖 {score.explanation.summary}
+                  </div>
+                )}
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: 8, marginTop: 20, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 22, flexWrap: 'wrap' }}>
               <button className="btn btn-primary btn-sm" disabled={busy} onClick={connect}>
-                {busy ? 'Connecting…' : 'Connect'}
+                {busy ? 'Connecting…' : '🔗 Connect'}
               </button>
               <button className="btn btn-ghost btn-sm" onClick={report}>Report</button>
               <button className="btn btn-ghost btn-sm" onClick={block}>Block</button>
