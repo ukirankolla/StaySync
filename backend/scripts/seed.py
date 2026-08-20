@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.config import settings  # noqa: E402
 from app.database import Base, SessionLocal, engine  # noqa: E402
-from app.models import Profile, Questionnaire, User  # noqa: E402
+from app.models import Listing, Profile, Questionnaire, User  # noqa: E402
 from app.security import hash_password  # noqa: E402
 
 DEMO_USERS = [
@@ -357,41 +357,126 @@ def seed():
             print("Seeded admin account.")
 
         existing_count = db.query(User).filter(User.email != settings.admin_email).count()
-        if existing_count >= len(DEMO_USERS):
-            print(f"Demo users already exist ({existing_count}). Skipping seed.")
+        if existing_count < len(DEMO_USERS):
+            default_pw = hash_password("demo1234")
+            for data in DEMO_USERS:
+                if db.query(User).filter(User.email == data["email"]).first():
+                    continue
+                user = User(email=data["email"], hashed_password=default_pw)
+                db.add(user)
+                db.flush()
+                profile = Profile(
+                    user_id=user.id,
+                    full_name=data["full_name"],
+                    age=data["age"],
+                    occupation=data["occupation"],
+                    occupation_detail=data["occupation_detail"],
+                    city=data["city"],
+                    preferred_area=data["preferred_area"],
+                    budget_min=data["budget_min"],
+                    budget_max=data["budget_max"],
+                    move_in_date=data["move_in_date"],
+                    bio=data["bio"],
+                    is_verified=True,
+                )
+                db.add(profile)
+                from datetime import datetime, timezone
+                q = Questionnaire(
+                    user_id=user.id,
+                    answers=data["answers"],
+                    completed_at=datetime.now(timezone.utc),
+                )
+                db.add(q)
+            db.commit()
+            print(f"Seeded {len(DEMO_USERS)} demo users with profiles and questionnaires.")
+
+        existing_listings = db.query(Listing).count()
+        if existing_listings > 0:
+            print("Listings already exist. Skipping.")
             return
 
-        default_pw = hash_password("demo1234")
-        for data in DEMO_USERS:
-            if db.query(User).filter(User.email == data["email"]).first():
-                continue
-            user = User(email=data["email"], hashed_password=default_pw)
-            db.add(user)
-            db.flush()
-            profile = Profile(
-                user_id=user.id,
-                full_name=data["full_name"],
-                age=data["age"],
-                occupation=data["occupation"],
-                occupation_detail=data["occupation_detail"],
-                city=data["city"],
-                preferred_area=data["preferred_area"],
-                budget_min=data["budget_min"],
-                budget_max=data["budget_max"],
-                move_in_date=data["move_in_date"],
-                bio=data["bio"],
-                is_verified=True,
-            )
-            db.add(profile)
-            from datetime import datetime, timezone
-            q = Questionnaire(
-                user_id=user.id,
-                answers=data["answers"],
-                completed_at=datetime.now(timezone.utc),
-            )
-            db.add(q)
+        users = {u.email: u for u in db.query(User).all()}
+        demo_listings = [
+            {"owner": "priya@example.com", "title": "2BHK in Gachibowli — bright, furnished",
+             "city": "Hyderabad", "area": "Gachibowli", "rent": 14000, "deposit": 28000,
+             "room_type": "shared", "bhk": "2BHK", "looking_for": 1,
+             "description": "Sunlit 2BHK with modular kitchen, AC in bedrooms, washing machine. 5 min walk to metro. Looking for a tidy, quiet flatmate.",
+             "amenities": ["wifi", "ac", "washing_machine", "furnished", "near_metro"],
+             "available_from": "2026-09-01", "status": "approved"},
+            {"owner": "arjun@example.com", "title": "3BHK near Madhapur IT corridor",
+             "city": "Hyderabad", "area": "Madhapur", "rent": 16000, "deposit": 32000,
+             "room_type": "shared", "bhk": "3BHK", "looking_for": 2,
+             "description": "Spacious 3BHK in a gated community. Power backup, gym, pool. Close to HITEC City. Prefer working professionals.",
+             "amenities": ["wifi", "ac", "gym", "pool", "power_backup", "gated"],
+             "available_from": "2026-09-01", "status": "approved"},
+            {"owner": "kriti@example.com", "title": "1BHK in Koramangala — minimal, peaceful",
+             "city": "Bangalore", "area": "Koramangala", "rent": 15000, "deposit": 30000,
+             "room_type": "private", "bhk": "1BHK", "looking_for": None,
+             "description": "Cozy 1BHK on 4th Block. Quiet street, lots of trees. Near 80 Feet Road cafes. Unfurnished but has basics.",
+             "amenities": ["wifi", "water_purifier", "lift", "near_metro"],
+             "available_from": "2026-09-01", "status": "approved"},
+            {"owner": "aditya@example.com", "title": "Shared room in HSR Layout — gamer friendly",
+             "city": "Bangalore", "area": "HSR Layout", "rent": 8000, "deposit": 10000,
+             "room_type": "shared", "bhk": "3BHK", "looking_for": 1,
+             "description": "One spot open in a 3BHK. We're two chill guys, one WFH gamer. Non-smoker preferred. Pet-friendly building.",
+             "amenities": ["wifi", "power_backup", "parking"],
+             "available_from": "2026-08-15", "status": "approved"},
+            {"owner": "neha@example.com", "title": "2BHK in Andheri West — modern, plants welcome",
+             "city": "Mumbai", "area": "Andheri", "rent": 22000, "deposit": 44000,
+             "room_type": "shared", "bhk": "2BHK", "looking_for": 1,
+             "description": "Tastefully done 2BHK near Versova metro. Lots of natural light, balcony garden. Vegetarian preferred.",
+             "amenities": ["wifi", "ac", "furnished", "near_metro", "balcony"],
+             "available_from": "2026-09-01", "status": "approved"},
+            {"owner": "rahul@example.com", "title": "1BHK in T. Nagar — clean, professional",
+             "city": "Chennai", "area": "T. Nagar", "rent": 13000, "deposit": 26000,
+             "room_type": "private", "bhk": "1BHK", "looking_for": None,
+             "description": "Well-maintained 1BHK in residential area. Near Pondy Bazaar. Walking distance to bus stand. Non-smoker flat.",
+             "amenities": ["wifi", "water_purifier", "lift", "parking"],
+             "available_from": "2026-10-01", "status": "approved"},
+            {"owner": "aman@example.com", "title": "3BHK in Kothrud — family-friendly, spacious",
+             "city": "Pune", "area": "Kothrud", "rent": 18000, "deposit": 36000,
+             "room_type": "shared", "bhk": "3BHK", "looking_for": 1,
+             "description": "Large 3BHK in quiet colony. Marble floors, storage space. Near Karve Road. Ideal for working professionals.",
+             "amenities": ["wifi", "ac", "furnished", "parking", "water_purifier"],
+             "available_from": "2026-09-15", "status": "approved"},
+            {"owner": "sonal@example.com", "title": "2BHK in Lajpat Nagar — lively area",
+             "city": "Delhi", "area": "Lajpat Nagar", "rent": 17000, "deposit": 34000,
+             "room_type": "shared", "bhk": "2BHK", "looking_for": 1,
+             "description": "Bright 2BHK near market and metro. Good ventilation, modular kitchen. Looking for a sociable but respectful flatmate.",
+             "amenities": ["wifi", "ac", "furnished", "near_metro", "power_backup"],
+             "available_from": "2026-09-15", "status": "approved"},
+            {"owner": "karthik@example.com", "title": "Single room near Benz Circle — budget friendly",
+             "city": "Vijayawada", "area": "Benz Circle", "rent": 5000, "deposit": 5000,
+             "room_type": "shared", "bhk": "2BHK", "looking_for": 1,
+             "description": "Simple single room in a shared 2BHK. Near bus stop and auto stand. Ideal for students on a budget. Shared kitchen.",
+             "amenities": ["water_purifier", "parking"],
+             "available_from": "2026-09-01", "status": "approved"},
+            {"owner": "siddharth@example.com", "title": "2BHK in Kakkanad Infopark area",
+             "city": "Kochi", "area": "Kakkanad", "rent": 12000, "deposit": 24000,
+             "room_type": "shared", "bhk": "2BHK", "looking_for": 1,
+             "description": "New 2BHK near Infopark. Good for IT folks. Full power backup, water 24/7. Non-smoker, tidy person preferred.",
+             "amenities": ["wifi", "power_backup", "lift", "water_purifier", "near_metro"],
+             "available_from": "2026-09-01", "status": "approved"},
+            {"owner": "divya@example.com", "title": "1BHK in Adyar — quiet, bookish neighbourhood",
+             "city": "Chennai", "area": "Adyar", "rent": 12000, "deposit": 24000,
+             "room_type": "private", "bhk": "1BHK", "looking_for": None,
+             "description": "Compact 1BHK on semi-residential street. Near Theosophical Society and beach. Peaceful, green surroundings.",
+             "amenities": ["wifi", "water_purifier", "parking"],
+             "available_from": "2026-10-01", "status": "approved"},
+            {"owner": "vikram@example.com", "title": "3BHK in Gachibowli — full floor, premium",
+             "city": "Hyderabad", "area": "Gachibowli", "rent": 20000, "deposit": 40000,
+             "room_type": "shared", "bhk": "3BHK", "looking_for": 2,
+             "description": "Premium 3BHK on top floor. City view, large balconies. Near DLF Cyber City. Two spots open — prefer late-night friendly people.",
+             "amenities": ["wifi", "ac", "gym", "pool", "power_backup", "furnished", "gated"],
+             "available_from": "2026-08-01", "status": "approved"},
+        ]
+        for listing_data in demo_listings:
+            owner_email = listing_data.pop("owner")
+            owner = users.get(owner_email)
+            if owner:
+                db.add(Listing(owner_id=owner.id, **listing_data))
         db.commit()
-        print(f"Seeded {len(DEMO_USERS)} demo users with profiles and questionnaires.")
+        print(f"Seeded {len(demo_listings)} demo listings.")
     finally:
         db.close()
 
