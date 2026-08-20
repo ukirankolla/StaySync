@@ -238,3 +238,10 @@ def _norm(s: str) -> str:
 for _state, _cities in INDIA_STATES.items():
     for _city in _cities:
         _CITY_STATE[_norm(_city)] = _state
+
+# Merge districts into the reverse lookup so they are also searchable.
+try:
+    from .india_districts import _DISTRICT_STATE
+    _CITY_STATE.update(_DISTRICT_STATE)
+except ImportError:
+    pass

@@ -140,9 +140,9 @@ class MatchResult(BaseModel):
     is_verified: bool = False
     is_fallback: bool = False
     fallback_note: str | None = None
-    score: float
+    score: float | None = None
     ml_score: float | None = None
-    category_scores: dict[str, float]
+    category_scores: dict[str, float | None]
     reasons: list[str] = []
 
 

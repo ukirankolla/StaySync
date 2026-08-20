@@ -76,7 +76,7 @@ def _category_score(category: str, qa: dict, qb: dict) -> tuple[float, dict[str,
         acc += score * w
         total_w += w
     if total_w == 0:
-        return 0.0, sub_scores
+        return None, sub_scores
     return acc / total_w, sub_scores
 
 
@@ -94,7 +94,7 @@ def compute_compatibility(
 
     for cat in ("lifestyle", "sleep_noise", "cleanliness", "routine", "social"):
         score, _ = _category_score(cat, qa, qb)
-        category_scores[cat] = round(score, 1)
+        category_scores[cat] = round(score, 1) if score is not None else None
 
     budget = _budget_score(
         profile_a.get("budget_min"), profile_a.get("budget_max"),
@@ -118,13 +118,16 @@ def compute_compatibility(
     total = 0.0
     used_w = 0.0
     for cat, w in WEIGHTS.items():
-        total += category_scores[cat] * w
-        used_w += w
+        if category_scores[cat] is not None:
+            total += category_scores[cat] * w
+            used_w += w
 
     reasons = generate_reasons(qa, qb, category_scores, sub, profile_a, profile_b)
 
+    score = round(total / used_w, 1) if used_w else None
+
     return {
-        "score": round(total / used_w, 1) if used_w else 0.0,
+        "score": score,
         "category_scores": category_scores,
         "sub_scores": sub,
         "reasons": reasons,
@@ -167,7 +170,7 @@ def generate_reasons(qa, qb, category_scores, sub, pa, pb) -> list[str]:
         reasons.append(MATCH_REASON_TEMPLATES["area"].format(area=area_label))
 
     for key, score in category_scores.items():
-        if score >= 80 and key in ("routine", "social", "cleanliness", "sleep_noise"):
+        if score is not None and score >= 80 and key in ("routine", "social", "cleanliness", "sleep_noise"):
             tmpl = MATCH_REASON_TEMPLATES.get(key)
             if tmpl:
                 reasons.append(tmpl)

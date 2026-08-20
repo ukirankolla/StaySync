@@ -43,7 +43,7 @@ export default function MatchCard({ match, onAction, onViewProfile }) {
     }
   }
 
-  const scoreColor = match.score >= 80 ? 'var(--gradient-cool)' : match.score >= 60 ? 'var(--gradient)' : 'var(--gradient-warm)'
+  const scoreColor = match.score == null ? 'var(--gradient-warm)' : match.score >= 80 ? 'var(--gradient-cool)' : match.score >= 60 ? 'var(--gradient)' : 'var(--gradient-warm)'
 
   return (
     <div className="card match-card">
@@ -61,7 +61,7 @@ export default function MatchCard({ match, onAction, onViewProfile }) {
             {match.age && `${match.age} · `}{match.occupation && match.occupation.replace('_', ' ')} · {match.city}
           </div>
         </div>
-        <div className="score-badge" style={{ background: scoreColor }}>{Math.round(match.score)}%</div>
+        <div className="score-badge" style={{ background: scoreColor }}>{match.score != null ? `${Math.round(match.score)}%` : '—'}</div>
       </div>
 
       <div className="match-meta">

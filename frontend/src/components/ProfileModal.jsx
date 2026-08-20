@@ -97,10 +97,10 @@ export default function ProfileModal({ userId, onClose, onConnected }) {
                   <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span>🧠</span> AI Compatibility
                   </h4>
-                  <span className="score-badge">{Math.round(score.score)}%</span>
+                  <span className="score-badge">{score.score != null ? `${Math.round(score.score)}%` : '—'}</span>
                 </div>
                 <div className="breakdown mt-8">
-                  {Object.entries(score.category_scores || {}).map(([key, val]) => (
+                  {Object.entries(score.category_scores || {}).map(([key, val]) => val != null && (
                     <div key={key} className="breakdown-row">
                       <span style={{ width: 130, color: 'var(--text-muted)' }}>{CATEGORY_LABELS[key] || key}</span>
                       <div className="breakdown-bar"><div style={{ width: `${val}%` }} /></div>

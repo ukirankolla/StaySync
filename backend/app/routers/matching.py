@@ -144,7 +144,7 @@ def recommendations(user: User = Depends(get_current_user), db: Session = Depend
                                            is_fallback=True,
                                            fallback_note=note)
 
-    results.sort(key=lambda r: (r.ml_score if r.ml_score is not None else r.score), reverse=True)
+    results.sort(key=lambda r: (r.ml_score if r.ml_score is not None else (r.score if r.score is not None else -1)), reverse=True)
     track(db, user.id, "recommendations_viewed",
           {"count": len(results), "fallback": bool(results and results[0].is_fallback),
            "area": area, "city": city})

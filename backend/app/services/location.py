@@ -5,6 +5,7 @@ the same state so the discovery feed never dead-ends. Every Indian state,
 city, and common locality is mapped so the app works nationwide.
 """
 
+from .india_districts import INDIA_DISTRICTS, _DISTRICT_STATE
 from .india_locations import INDIA_STATES, _CITY_STATE
 
 # ── Localities / neighbourhoods → state ───────────────────────────────────────
@@ -306,16 +307,25 @@ def nearby_cities(term: str) -> tuple[list[str], str] | None:
         state = _CITY_STATE[t]
         return INDIA_STATES.get(state, []), state
 
+    # 3b. Exact district
+    if t in _DISTRICT_STATE:
+        state = _DISTRICT_STATE[t]
+        return INDIA_STATES.get(state, []), state
+
     # 4. Substring / prefix match against state names
     for state, cities in INDIA_STATES.items():
         if len(t) >= 4 and t in _norm(state):
             return cities, state
 
-    # 5. Substring / prefix match against known cities
+    # 5. Substring / prefix match against known cities and districts
     for state, cities in INDIA_STATES.items():
         for city in cities:
             if t == _norm(city) or (len(t) >= 4 and (t in _norm(city) or _norm(city) in t)):
                 return cities, state
+    for state, districts in INDIA_DISTRICTS.items():
+        for district in districts:
+            if t == _norm(district) or (len(t) >= 4 and (t in _norm(district) or _norm(district) in t)):
+                return INDIA_STATES.get(state, []), state
 
     # 6. Fuzzy match against known localities (handles typos / short names)
     for locality, state in LOCALITY_STATE.items():

@@ -54,9 +54,9 @@ export default function Discover() {
 
   const visible = matches.filter((m) => !blocked.has(m.user_id))
   const sorted = [...visible].sort((a, b) => {
-    if (filters.sort === 'score') return b.score - a.score
+    if (filters.sort === 'score') return (b.score ?? -1) - (a.score ?? -1)
     if (filters.sort === 'budget') return (a.budget_min || 0) - (b.budget_min || 0)
-    return (b.ml_score ?? b.score) - (a.ml_score ?? a.score)
+    return ((b.ml_score ?? b.score ?? -1) - (a.ml_score ?? a.score ?? -1))
   })
   const fallback = visible.find((m) => m.is_fallback)
 
