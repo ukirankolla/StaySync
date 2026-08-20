@@ -10,20 +10,17 @@ export default function ForgotPassword() {
   const [newPassword, setNewPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const [devCode, setDevCode] = useState('')
-  const [delivered, setDelivered] = useState(null)
+  const [otpCode, setOtpCode] = useState('')
 
   const request = async (e) => {
     e.preventDefault()
     setError('')
     setBusy(true)
-    setDevCode('')
-    setDelivered(null)
+    setOtpCode('')
     try {
       const res = await api('/auth/forgot', { method: 'POST', body: { identifier } })
       setStep('verify')
-      setDelivered(res.delivered)
-      if (res.dev_code) setDevCode(res.dev_code)
+      if (res.otp_code) setOtpCode(res.otp_code)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -64,18 +61,13 @@ export default function ForgotPassword() {
         <form className="form card" onSubmit={reset}>
           <h2 className="center">Set a new password</h2>
           {error && <div className="alert">{error}</div>}
-          {devCode && (
-            <div className="alert alert-info" style={{ textAlign: 'left' }}>
-              <strong>Your reset code:</strong>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '0.15em', margin: '8px 0', color: 'var(--accent)' }}>
-                {devCode}
+          {otpCode && (
+            <div className="alert alert-info" style={{ textAlign: 'center' }}>
+              <strong>Your reset code</strong>
+              <div style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '0.2em', margin: '12px 0', color: 'var(--accent)' }}>
+                {otpCode}
               </div>
-              <div style={{ fontSize: '.8rem', opacity: 0.8 }}>Email delivery not configured — code shown here for development.</div>
-            </div>
-          )}
-          {!devCode && delivered === false && (
-            <div className="alert alert-info">
-              Email delivery is not configured. Check the server console for your OTP code.
+              <div style={{ fontSize: '.85rem', opacity: 0.8 }}>Enter this code below to reset your password.</div>
             </div>
           )}
           <div className="field">
@@ -89,7 +81,7 @@ export default function ForgotPassword() {
           </div>
           <button className="btn btn-primary btn-block" disabled={busy}>{busy ? 'Resetting…' : 'Reset password'}</button>
           <div className="form-note">
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setStep('request'); setDevCode(''); }}>← Send another code</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setStep('request'); setOtpCode(''); }}>← Send another code</button>
           </div>
         </form>
       )}
