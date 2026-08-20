@@ -109,7 +109,7 @@ Both values are overridable via the `ADMIN_EMAIL` / `ADMIN_PASSWORD` env vars.
 |--------|--------|
 | Account — email/phone register, password + OTP login | ✅ |
 | Profile — age, occupation, city, area, budget, move-in date | ✅ |
-| Trust — government ID upload + admin review, verified badge | ✅ |
+| Trust — email OTP verification, verified badge | ✅ |
 | Lifestyle questionnaire (12 questions) | ✅ |
 | Compatibility — transparent weighted score + reasons | ✅ |
 | ML predictions — scikit-learn model blended into ranking | ✅ |
@@ -146,7 +146,7 @@ backend/
     deps.py            # auth dependencies
     questionnaire.py   # questions + weights + reason templates
     schemas.py         # Pydantic request/response models
-    routers/           # auth, profile, matching, chat, groups, listings, moderation, admin, ml, uploads, verification
+    routers/           # auth, profile, matching, chat, groups, listings, moderation, admin, ml, uploads
     services/          # matching, ml_model, agents, chat_manager, events
   scripts/
     seed.py            # demo data
