@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { IMG } from '../lib/images'
-import AiImage from '../components/AiImage'
+import { AUTH_IMAGES } from '../lib/images'
 
 const LOGIN_QUOTES = [
   { text: "The compatibility score made choosing a flatmate feel safe and easy.", author: "Priya, Bengaluru" },
@@ -71,7 +70,7 @@ export default function Login() {
         </form>
       </div>
       <div className="auth-visual">
-        <AiImage prompt="bright modern co-living apartment, young professionals sharing a meal, warm golden hour light, photorealistic" seed={42} fallback={IMG.heroAlt} alt="" w={900} h={800} />
+        <img src={AUTH_IMAGES.login} alt="" />
         <div className="auth-quote">
           <p>"{quote.text}"</p>
           <span>— {quote.author}</span>

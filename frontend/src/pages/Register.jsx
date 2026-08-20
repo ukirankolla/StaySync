@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { IMG } from '../lib/images'
-import AiImage from '../components/AiImage'
+import { AUTH_IMAGES } from '../lib/images'
 
 const REGISTER_QUOTES = [
   { text: "Found a roommate who matches my routine and my budget in a single evening.", author: "Rahul, Pune" },
@@ -69,7 +68,7 @@ export default function Register() {
         </form>
       </div>
       <div className="auth-visual">
-        <AiImage prompt="friends having chai on a balcony of an Indian apartment, city skyline sunset, warm candid photo, photorealistic" seed={77} fallback={IMG.city} alt="" w={900} h={800} />
+        <img src={AUTH_IMAGES.register} alt="" />
         <div className="auth-quote">
           <p>"{quote.text}"</p>
           <span>— {quote.author}</span>

@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { IMG, HERO_PROMPTS } from '../lib/images'
-import AiImage from '../components/AiImage'
+import { IMG, HERO_IMAGES, STEP_IMAGES } from '../lib/images'
 import ParticleField from '../components/ParticleField'
 import TypingEffect from '../components/TypingEffect'
 import LiveCounter from '../components/LiveCounter'
@@ -17,17 +16,13 @@ const TYPING_TEXTS = [
 
 const STEPS = [
   { title: 'Create your profile', text: 'Tell us who you are, your city, and your budget. Our AI learns your preferences.',
-    prompt: 'young Indian professional smiling, setting up a profile on a laptop in a bright modern home office',
-    fallback: IMG.plan, seed: 11, icon: '👤' },
+    img: STEP_IMAGES.profile, icon: '👤' },
   { title: 'Answer the lifestyle questionnaire', text: 'Sleep, cleanliness, routine — the things that actually matter for compatibility.',
-    prompt: 'person answering a lifestyle questionnaire on a smartphone app, cozy sunlit bedroom, plants',
-    fallback: IMG.office, seed: 12, icon: '📋' },
+    img: STEP_IMAGES.questionnaire, icon: '📋' },
   { title: 'Match & chat instantly', text: 'See transparent compatibility scores with clear reasons. Start chatting immediately.',
-    prompt: 'two young roommates laughing over chai at a modern cafe, warm candid photo',
-    fallback: IMG.friends, seed: 13, icon: '💬' },
+    img: STEP_IMAGES.match, icon: '💬' },
   { title: 'Form a group & find a flat', text: 'Hunt for a verified listing together with your compatible roommates.',
-    prompt: 'group of friends walking through a bright empty apartment together holding keys, excited',
-    fallback: IMG.home, seed: 14, icon: '🏠' },
+    img: STEP_IMAGES.flat, icon: '🏠' },
 ]
 
 const FEATURES = [
@@ -54,7 +49,7 @@ export default function Landing() {
   const sectionsRef = useRef([])
 
   useEffect(() => {
-    const t = setInterval(() => setHeroIdx((i) => (i + 1) % HERO_PROMPTS.length), 6000)
+    const t = setInterval(() => setHeroIdx((i) => (i + 1) % HERO_IMAGES.length), 6000)
     return () => clearInterval(t)
   }, [])
 
@@ -92,16 +87,10 @@ export default function Landing() {
     <div>
       {/* Hero Section */}
       <section className="hero" style={{ transform: `translateY(${scrollY * 0.1}px)` }}>
-        <AiImage
-          className="hero-bg hero-fade"
-          key={heroIdx}
-          prompt={HERO_PROMPTS[heroIdx]}
-          seed={heroIdx + 1}
-          w={1800}
-          h={900}
-          fallback={IMG.hero}
-          alt=""
-        />
+        {HERO_IMAGES.map((url, i) => (
+          <img key={i} src={url} alt="" className={`hero-bg ${i === heroIdx ? 'hero-fade' : ''}`}
+               style={{ opacity: i === heroIdx ? 1 : 0, transition: 'opacity 1.5s ease', position: 'absolute' }} />
+        ))}
         <ParticleField count={20} />
         <div className="hero-inner">
           <span className="hero-eyebrow">
@@ -165,7 +154,7 @@ export default function Landing() {
         <div className="grid grid-3 steps-grid">
           {STEPS.map((s, i) => (
             <div className="card step-card" key={s.title} style={{ animationDelay: `${i * 0.1}s` }}>
-              <AiImage className="card-img" prompt={s.prompt} seed={s.seed} fallback={s.fallback} alt={s.title} />
+              <img className="card-img" src={s.img} alt={s.title} loading="lazy" />
               <div className="step-num">{i + 1}</div>
               <div className="feature-icon">{s.icon}</div>
               <h3>{s.title}</h3>

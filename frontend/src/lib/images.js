@@ -1,5 +1,5 @@
-const U = (id, w = 900) =>
-  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=80`
+const U = (id, w = 900, q = 80) =>
+  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=${q}&dpr=2`
 
 export const IMG = {
   hero: U('photo-1493809842364-78817add7ffb', 1800),
@@ -13,6 +13,29 @@ export const IMG = {
   plan: U('photo-1531482615713-2afd69097998', 900),
   office: U('photo-1529333166437-7750a6dd5a70', 900),
   home: U('photo-1560518883-ce09059eeffa', 900),
+}
+
+/* Hero images — real high-quality Unsplash photos cycling in the hero */
+export const HERO_IMAGES = [
+  U('photo-1493809842364-78817add7ffb', 1800),
+  U('photo-1522708323590-d24dbb6b0267', 1800),
+  U('photo-1502672260266-1c1ef2d93688', 1800),
+  U('photo-1560448204-e02f11c3d0e2', 1800),
+  U('photo-1513694203232-719a280e022f', 1800),
+]
+
+/* Step card images — real photos for each "How it works" step */
+export const STEP_IMAGES = {
+  profile: U('photo-1516321318423-f06f85e504b3', 900),
+  questionnaire: U('photo-1512941937669-90a1b58e7e9c', 900),
+  match: U('photo-1529156069898-49953e39b3ac', 900),
+  flat: U('photo-1560448204-e02f11c3d0e2', 900),
+}
+
+/* Auth page images — real interior/lifestyle photos */
+export const AUTH_IMAGES = {
+  login: U('photo-1522708323590-d24dbb6b0267', 900),
+  register: U('photo-1477959858617-67f85cf4f1df', 900),
 }
 
 export const PORTRAITS = [
@@ -39,10 +62,36 @@ const ROOMS = {
   default: 'photo-1524758631624-e2822e304c36',
 }
 
+/* Real listing interior photos — no AI needed */
+const LISTING_INTERIORS = [
+  'photo-1502672260266-1c1ef2d93688',
+  'photo-1560448204-e02f11c3d0e2',
+  'photo-1522708323590-d24dbb6b0267',
+  'photo-1493809842364-78817add7ffb',
+  'photo-1513694203232-719a280e022f',
+  'photo-1567016432779-094069958ea5',
+  'photo-1560185127-6ed189bf02f4',
+  'photo-1586023492125-27b2c045efd7',
+  'photo-1536376072261-38c75010e6c9',
+  'photo-1618221195710-dd6b41faaea6',
+  'photo-1616486338812-3dadae4b4ace',
+  'photo-1600585154340-be6161a56a0c',
+  'photo-1600607687939-ce8a6c25118c',
+  'photo-1600566753190-17f0baa2a6c3',
+  'photo-1600585154526-990dced4db0d',
+]
+
 export function roomImage(city = '') {
   const key = (city || '').toLowerCase().replace(/[^a-z]/g, '')
   const id = ROOMS[key] || ROOMS.default
   return U(id, 900)
+}
+
+/* Get a listing image based on listing ID — real photos, no AI */
+export function listingImage(listing) {
+  if (listing.photos?.[0]) return listing.photos[0]
+  const idx = (listing.id || 0) % LISTING_INTERIORS.length
+  return U(LISTING_INTERIORS[idx], 900)
 }
 
 const GRADIENTS = [
@@ -77,27 +126,3 @@ export function hashSeed(str = '') {
   for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0
   return h
 }
-
-const AI_MODEL = 'flux'
-
-export function aiImage(prompt, { w = 900, h = 600, seed = 1 } = {}) {
-  const p = encodeURIComponent(`${prompt}, photorealistic, high detail, natural light`)
-  return `https://image.pollinations.ai/prompt/${p}?width=${w}&height=${h}&seed=${seed}&nologo=true&model=${AI_MODEL}`
-}
-
-export function listingPrompt(l) {
-  const room = { private: 'private room', shared: 'shared room', whole: 'whole flat apartment' }[l.room_type] || 'room'
-  const parts = [
-    `photorealistic ${room} interior in ${l.city || 'India'}`,
-    l.area ? `in ${l.area}` : '',
-    l.bhk || '',
-    'bright natural light, modern tasteful furniture, clean, wide angle real estate photo',
-  ]
-  return parts.filter(Boolean).join(', ')
-}
-
-export const HERO_PROMPTS = [
-  'bright modern co-living apartment living room in India, young professionals relaxing, warm sunlight',
-  'cozy furnished bedroom with study desk in a shared flat, warm evening light',
-  'friends having chai on a balcony of an Indian apartment, city skyline sunset',
-]
