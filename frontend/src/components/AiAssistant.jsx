@@ -11,8 +11,8 @@ const SUGGESTIONS = [
 
 const RESPONSES = {
   compatibility: "Our AI analyzes 12 lifestyle factors — sleep schedule, cleanliness, noise tolerance, budget, and more. Each match comes with transparent reasons so you know exactly why you're compatible.",
-  verify: "You can verify your profile in two ways: email OTP verification for a basic badge, or government ID verification for a trusted identity badge. Both boost your trust score with potential roommates.",
-  safety: "StaySync has 24/7 moderation, report/block tools, and government ID verification. We review all reports with our AI moderation agent and take swift action against fake profiles.",
+  verify: "You can verify your profile via email OTP verification — it earns you a verified badge and boosts trust with potential roommates. Go to your Profile page and click 'Verify now'.",
+  safety: "StaySync has 24/7 moderation, report/block tools, and transparent scoring. We review all reports with our AI moderation agent and take swift action against fake profiles.",
   groups: "Create a group, invite compatible roommates, set a shared budget and city preference, then browse flat listings together. It's the smart way to find a flat with people you actually get along with.",
   cities: "StaySync is currently live in 6 Indian cities with more coming soon. We're expanding based on demand — join up and let us know where you'd like us next!",
   default: "Great question! StaySync uses AI-powered matching to connect you with compatible roommates based on lifestyle, budget, and preferences. Try browsing your matches to see it in action!"

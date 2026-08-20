@@ -30,7 +30,7 @@ const FEATURES = [
   { title: 'Real-time Chat', text: 'Connect with matched people and chat instantly after a mutual match. No waiting.', icon: '⚡', gradient: 'var(--gradient-cool)' },
   { title: 'Roommate Groups', text: 'Form a group with compatible people, then hunt for a flat together as a team.', icon: '👥', gradient: 'var(--gradient-purple)' },
   { title: 'Smart Flat Listings', text: 'Browse verified room and flat listings that fit your group\'s budget and area preferences.', icon: '🏢', gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
-  { title: 'Safety First', text: 'Report, block, AI-powered moderation, and government ID verification keep the community safe.', icon: '🛡️', gradient: 'var(--gradient-cool)' },
+  { title: 'Safety First', text: 'Report, block, and AI-powered moderation keep the community safe.', icon: '🛡️', gradient: 'var(--gradient-cool)' },
   { title: 'Machine Learning', text: 'Our matching algorithm learns from the community and refines itself for smarter recommendations.', icon: '🧠', gradient: 'var(--gradient-purple)' },
 ]
 
@@ -38,7 +38,7 @@ const TESTIMONIALS = [
   { name: 'Priya S.', role: 'Software Engineer, Bengaluru', text: 'StaySync matched me with a roommate who had the exact same sleep schedule. It\'s been 6 months and we\'re still going strong!' },
   { name: 'Arjun M.', role: 'MBA Student, Delhi', text: 'The compatibility score transparency is what sold me. I could see exactly why we matched — no black box.' },
   { name: 'Neha K.', role: 'Designer, Mumbai', text: 'Formed a group on StaySync and found our dream 3BHK in Koramangala within a week. The AI suggestions were spot on.' },
-  { name: 'Rahul T.', role: 'Data Analyst, Pune', text: 'I was skeptical about finding roommates online, but the ID verification and moderation made me feel safe. Best decision.' },
+  { name: 'Rahul T.', role: 'Data Analyst, Pune', text: 'I was skeptical about finding roommates online, but the moderation and transparent scoring made me feel safe. Best decision.' },
 ]
 
 export default function Landing() {

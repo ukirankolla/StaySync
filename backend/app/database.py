@@ -1,4 +1,3 @@
-import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
@@ -30,14 +29,6 @@ class Base(DeclarativeBase):
 def ensure_schema() -> None:
     """Create tables and add missing columns (lightweight auto-migration)."""
     Base.metadata.create_all(bind=engine)
-    insp = sa.inspect(engine)
-    if "profiles" in insp.get_table_names():
-        cols = {c["name"] for c in insp.get_columns("profiles")}
-        if "is_id_verified" not in cols:
-            with engine.begin() as conn:
-                conn.execute(sa.text(
-                    "ALTER TABLE profiles ADD COLUMN is_id_verified BOOLEAN NOT NULL DEFAULT FALSE"
-                ))
 
 
 def get_db():

@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 from fastapi import APIRouter, Depends
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -16,9 +14,8 @@ from ..models import (
     Report,
     RoomGroup,
     User,
-    Verification,
 )
-from ..schemas import AdminVerificationOut, ReportOut
+from ..schemas import ReportOut
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -36,8 +33,6 @@ def analytics(db: Session = Depends(get_db)):
     total_listings = db.query(func.count(Listing.id)).scalar()
     approved_listings = db.query(func.count(Listing.id)).filter(Listing.status == "approved").scalar()
     pending_reports = db.query(func.count(Report.id)).filter(Report.status == "pending").scalar()
-    pending_verifications = db.query(func.count(Verification.id)).filter(Verification.status == "pending").scalar()
-    id_verified_users = db.query(func.count(Profile.id)).filter(Profile.is_id_verified.is_(True)).scalar()
 
     by_city = db.query(Profile.city, func.count(Profile.id)).filter(Profile.city != "").group_by(Profile.city).all()
     registrations_per_day = (
@@ -60,8 +55,6 @@ def analytics(db: Session = Depends(get_db)):
         "total_listings": total_listings,
         "approved_listings": approved_listings,
         "pending_reports": pending_reports,
-        "pending_verifications": pending_verifications,
-        "id_verified_users": id_verified_users,
         "users_by_city": [{"city": c, "count": n} for c, n in by_city],
         "registrations_per_day": [{"date": str(d), "count": n} for d, n in registrations_per_day],
     }
@@ -160,58 +153,3 @@ def review_listing(listing_id: int, action: str, db: Session = Depends(get_db)):
         listing.is_active = False
     db.commit()
     return {"ok": True}
-
-
-@router.get("/verifications", response_model=list[AdminVerificationOut])
-def list_verifications(status: str | None = None, db: Session = Depends(get_db)):
-    query = db.query(Verification)
-    if status:
-        query = query.filter(Verification.status == status)
-    query = query.order_by(Verification.created_at.desc()).limit(200)
-    out = []
-    for v in query.all():
-        user = db.get(User, v.user_id)
-        profile = db.query(Profile).filter(Profile.user_id == v.user_id).first()
-        out.append(AdminVerificationOut(
-            id=v.id,
-            user_id=v.user_id,
-            id_type=v.id_type,
-            id_number=v.id_number,
-            document_url=v.document_url,
-            status=v.status,
-            admin_note=v.admin_note,
-            created_at=v.created_at,
-            reviewed_at=v.reviewed_at,
-            full_name=profile.full_name if profile else "",
-            email=user.email if user else None,
-            phone=user.phone if user else None,
-        ))
-    return out
-
-
-@router.post("/verifications/{verification_id}/review")
-def review_verification(verification_id: int, action: str, note: str | None = None,
-                        db: Session = Depends(get_db), admin: User = Depends(require_admin)):
-    if action not in ("approve", "reject"):
-        return {"error": "action must be approve or reject"}
-    record = db.get(Verification, verification_id)
-    if not record:
-        return {"error": "not found"}
-    if record.status != "pending":
-        return {"error": f"already {record.status}"}
-
-    record.status = "approved" if action == "approve" else "rejected"
-    record.admin_note = note or None
-    record.reviewed_at = datetime.now(timezone.utc)
-    record.reviewed_by = admin.id
-
-    profile = db.query(Profile).filter(Profile.user_id == record.user_id).first()
-    if profile:
-        profile.is_id_verified = action == "approve"
-
-    db.commit()
-    from ..services.events import track
-
-    track(db, record.user_id, "id_verification_reviewed",
-          {"verification_id": record.id, "action": action, "note": note})
-    return {"ok": True, "status": record.status}

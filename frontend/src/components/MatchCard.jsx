@@ -55,8 +55,7 @@ export default function MatchCard({ match, onAction, onViewProfile }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <strong style={{ fontSize: '1rem' }}>{match.full_name}</strong>
-            {match.is_id_verified && <span className="badge badge-green" title="Government ID verified" style={{ fontSize: '.65rem' }}>ID ✓</span>}
-            {!match.is_id_verified && match.is_verified && <span className="badge" style={{ fontSize: '.65rem' }}>verified</span>}
+            {match.is_verified && <span className="badge" style={{ fontSize: '.65rem' }}>verified</span>}
           </div>
           <div className="muted" style={{ fontSize: '.83rem', marginTop: 2 }}>
             {match.age && `${match.age} · `}{match.occupation && match.occupation.replace('_', ' ')} · {match.city}

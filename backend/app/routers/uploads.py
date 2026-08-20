@@ -11,9 +11,7 @@ from ..models import User
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 UPLOAD_DIR = BASE_DIR / "uploads"
 ALLOWED_TYPES = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
-ALLOWED_DOC_TYPES = {**ALLOWED_TYPES, "application/pdf": ".pdf"}
 MAX_SIZE = 5 * 1024 * 1024  # 5MB
-MAX_DOC_SIZE = 10 * 1024 * 1024  # 10MB
 
 router = APIRouter(prefix="/upload", tags=["upload"])
 
@@ -39,26 +37,6 @@ async def upload_image(file: UploadFile = File(...), user: User = Depends(get_cu
     data = await file.read()
     if len(data) > MAX_SIZE:
         raise HTTPException(status_code=400, detail="Image too large (max 5MB)")
-    filename = f"{uuid.uuid4().hex}{ext}"
-
-    if settings.storage_backend == "supabase":
-        await _upload_to_supabase(filename, data, file.content_type)
-        return {"url": f"{settings.supabase_url.rstrip('/')}/storage/v1/object/public/{settings.supabase_storage_bucket}/{filename}"}
-
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    (UPLOAD_DIR / filename).write_bytes(data)
-    base = settings.public_base_url.rstrip("/") if settings.public_base_url else ""
-    return {"url": f"{base}/uploads/{filename}"}
-
-
-@router.post("/document")
-async def upload_document(file: UploadFile = File(...), user: User = Depends(get_current_user)):
-    ext = ALLOWED_DOC_TYPES.get(file.content_type)
-    if not ext:
-        raise HTTPException(status_code=400, detail="Only JPG, PNG, WEBP or PDF documents are allowed")
-    data = await file.read()
-    if len(data) > MAX_DOC_SIZE:
-        raise HTTPException(status_code=400, detail="Document too large (max 10MB)")
     filename = f"{uuid.uuid4().hex}{ext}"
 
     if settings.storage_backend == "supabase":

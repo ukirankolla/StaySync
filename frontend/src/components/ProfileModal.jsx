@@ -64,7 +64,6 @@ export default function ProfileModal({ userId, onClose, onConnected }) {
             <Avatar name={profile?.full_name} photo={profile?.photos?.[0]} size={56} />
             <div>
               <h3 style={{ margin: 0 }}>{profile?.full_name || 'Profile'}</h3>
-              {profile?.is_id_verified && <span className="badge badge-green" title="Government ID verified">ID verified</span>}
             </div>
           </div>
           <button className="modal-close" onClick={onClose}>×</button>

@@ -61,7 +61,6 @@ def _to_match_result(peer: User, qa: Questionnaire | None, qb: Questionnaire | N
         bio=pb.bio,
         photos=pb.photos if pb else [],
         is_verified=pb.is_verified if pb else False,
-        is_id_verified=pb.is_id_verified if pb else False,
         is_fallback=is_fallback,
         fallback_note=fallback_note,
         score=result["score"],
@@ -74,7 +73,7 @@ def _to_match_result(peer: User, qa: Questionnaire | None, qb: Questionnaire | N
 def _run_recommendations(user: User, db: Session, mine_q: Questionnaire | None,
                          profile: Profile | None, blocked: set[int], connected: set[int],
                          loc_filter=None, max_budget: int | None = None,
-                         verified_only: bool = False, is_fallback: bool = False,
+                         is_fallback: bool = False,
                          fallback_note: str | None = None) -> list[MatchResult]:
     query = (
         select(User)
@@ -87,8 +86,6 @@ def _run_recommendations(user: User, db: Session, mine_q: Questionnaire | None,
         query = query.where(loc_filter)
     if max_budget:
         query = query.where(Profile.budget_min <= max_budget)
-    if verified_only:
-        query = query.where(Profile.is_id_verified.is_(True))
 
     results: list[MatchResult] = []
     for peer in db.scalars(query).all():
@@ -103,8 +100,7 @@ def _run_recommendations(user: User, db: Session, mine_q: Questionnaire | None,
 
 @router.get("/recommendations", response_model=list[MatchResult])
 def recommendations(user: User = Depends(get_current_user), db: Session = Depends(get_db),
-                    area: str | None = None, city: str | None = None, max_budget: int | None = None,
-                    verified_only: bool = False):
+                    area: str | None = None, city: str | None = None, max_budget: int | None = None):
     profile = db.query(Profile).filter(Profile.user_id == user.id).first()
     mine_q = db.query(Questionnaire).filter(Questionnaire.user_id == user.id).first()
 
@@ -127,8 +123,7 @@ def recommendations(user: User = Depends(get_current_user), db: Session = Depend
         loc_filter = area_like if loc_filter is None else and_(loc_filter, area_like)
 
     results = _run_recommendations(user, db, mine_q, profile, blocked, connected,
-                                   loc_filter=loc_filter, max_budget=max_budget,
-                                   verified_only=verified_only)
+                                   loc_filter=loc_filter, max_budget=max_budget)
 
     # Never dead-end: if an exact location search finds nothing, broaden it.
     if not results and location_applied:
@@ -140,13 +135,13 @@ def recommendations(user: User = Depends(get_current_user), db: Session = Depend
             note = f"No matches in “{term.title()}” yet — showing matches from {state} (nearby)"
             results = _run_recommendations(user, db, mine_q, profile, blocked, connected,
                                            loc_filter=fb_filter, max_budget=max_budget,
-                                           verified_only=verified_only, is_fallback=True,
-                                           fallback_note=note)
+                                            is_fallback=True,
+                                            fallback_note=note)
         if not results:
             note = f"No matches in “{term.title()}” yet — showing matches from other cities"
             results = _run_recommendations(user, db, mine_q, profile, blocked, connected,
                                            loc_filter=None, max_budget=max_budget,
-                                           verified_only=verified_only, is_fallback=True,
+                                           is_fallback=True,
                                            fallback_note=note)
 
     results.sort(key=lambda r: (r.ml_score if r.ml_score is not None else r.score), reverse=True)

@@ -12,13 +12,6 @@ const PRIVACY_FIELDS = [
   ['move_in_date', 'my move-in date'],
   ['photos', 'my photos'],
 ]
-const ID_TYPES = [
-  ['passport', 'Passport'],
-  ['driving_license', "Driver's license"],
-  ['national_id', 'National ID (e.g. Aadhaar, Aadhaar-like)'],
-  ['student_id', 'Student / institutional ID'],
-  ['other', 'Other government ID'],
-]
 
 export default function Profile() {
   const { user } = useAuth()
@@ -38,13 +31,6 @@ export default function Profile() {
   const [verifyMsg, setVerifyMsg] = useState('')
   const [otpCode, setOtpCode] = useState('')
   const [otpStep, setOtpStep] = useState('idle')
-  const [idVerify, setIdVerify] = useState(null)
-  const [idDocUrl, setIdDocUrl] = useState('')
-  const [idType, setIdType] = useState('passport')
-  const [idNumber, setIdNumber] = useState('')
-  const [idUploading, setIdUploading] = useState(false)
-  const [idSubmitting, setIdSubmitting] = useState(false)
-  const [idMsg, setIdMsg] = useState('')
   const [pw, setPw] = useState({ current_password: '', new_password: '' })
   const [pwMsg, setPwMsg] = useState('')
 
@@ -59,9 +45,6 @@ export default function Profile() {
         privacy: p.privacy || {},
       })
       setIsVerified(p.is_verified)
-    }).catch(() => {})
-    api('/verification/me').then((v) => {
-      if (v) { setIdVerify(v); setIdType(v.id_type); setIdNumber(v.id_number || ''); setIdDocUrl(v.document_url) }
     }).catch(() => {})
     api('/matching/agents/onboarding').then(setProgress).catch(() => {})
   }, [user])
@@ -99,33 +82,6 @@ export default function Profile() {
       await api('/profile/verify/confirm', { method: 'POST', body: { code: otpCode } })
       setIsVerified(true); setOtpStep('idle'); setVerifyMsg('Your profile is now verified ✓')
     } catch (err) { setVerifyMsg(err.message) }
-  }
-
-  const uploadIdDoc = async (e) => {
-    const file = e.target.files?.[0]; if (!file) return
-    setIdUploading(true); setIdMsg('')
-    try {
-      const fd = new FormData(); fd.append('file', file)
-      const res = await fetch('/api/upload/document', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${localStorage.getItem('staysync_token')}` },
-        body: fd,
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.detail || 'Upload failed')
-      setIdDocUrl(data.url)
-    } catch (err2) { setIdMsg(err2.message) } finally { setIdUploading(false); e.target.value = '' }
-  }
-
-  const submitIdVerification = async () => {
-    setIdMsg(''); setIdSubmitting(true)
-    try {
-      const v = await api('/verification/submit', {
-        method: 'POST',
-        body: { id_type: idType, id_number: idNumber || null, document_url: idDocUrl },
-      })
-      setIdVerify(v); setIdMsg('Verification submitted. An admin will review your document.')
-    } catch (err) { setIdMsg(err.message) } finally { setIdSubmitting(false) }
   }
 
   const changePassword = async (e) => {
@@ -181,61 +137,6 @@ export default function Profile() {
           </div>
         )}
         {verifyMsg && <div className="alert alert-success" style={{ margin: 0 }}>{verifyMsg}</div>}
-      </div>
-
-      {/* ID Verification */}
-      <div className="card mb-16" style={{ maxWidth: 640 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <strong style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span>🪪</span> Identity verification (Government ID)
-            </strong>
-            <div className="muted mt-4">
-              {idVerify?.status === 'approved' && <span style={{ color: 'var(--success)' }}>✓ ID verified — you show a verified trust badge to roommates.</span>}
-              {idVerify?.status === 'pending' && 'Your document is under review by our team.'}
-              {idVerify?.status === 'rejected' && <span style={{ color: 'var(--danger)' }}>Rejected{idVerify.admin_note ? `: ${idVerify.admin_note}` : ''}. Upload a clearer document to reapply.</span>}
-              {!idVerify && 'Upload a government ID so we can confirm you are a genuine person. Reviewed by our AI + team.'}
-            </div>
-          </div>
-          {idVerify?.status === 'approved'
-            ? <span className="status-pill status-accepted">verified</span>
-            : <span className={`status-pill ${idVerify?.status === 'rejected' ? 'status-declined' : 'status-pending'}`}>{idVerify?.status || 'not submitted'}</span>}
-        </div>
-        {(idVerify?.status !== 'pending' || !idVerify) && (
-          <div className="mt-16" style={{ display: 'grid', gap: 12 }}>
-            <div className="form-row">
-              <div className="field">
-                <label>ID type</label>
-                <select className="select" value={idType} onChange={(e) => setIdType(e.target.value)}>
-                  {ID_TYPES.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
-                </select>
-              </div>
-              <div className="field">
-                <label>ID number (optional)</label>
-                <input className="input" value={idNumber} onChange={(e) => setIdNumber(e.target.value)}
-                       placeholder="Masked for everyone else" maxLength={64} />
-              </div>
-            </div>
-            <div className="field">
-              <label>ID document (photo or scan)</label>
-              {idDocUrl && (
-                <div className="photo-strip mb-8">
-                  <a href={idDocUrl} target="_blank" rel="noreferrer"><img src={idDocUrl} alt="ID" className="photo-thumb" /></a>
-                </div>
-              )}
-              <div className="photo-upload">
-                <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={uploadIdDoc}
-                       disabled={idUploading} className="input" style={{ width: 'auto' }} />
-                {idUploading && <span className="muted">Uploading…</span>}
-              </div>
-            </div>
-            {idMsg && <div className={`alert ${idMsg.includes('submitted') || idMsg.includes('verified') ? 'alert-success' : ''}`}>{idMsg}</div>}
-            <button className="btn btn-primary" disabled={idSubmitting || !idDocUrl} onClick={submitIdVerification}>
-              {idSubmitting ? 'Submitting…' : idVerify ? 'Resubmit verification' : 'Submit for verification'}
-            </button>
-            <p className="muted" style={{ fontSize: '.8rem', margin: 0 }}>Your document is only visible to you and our moderation team.</p>
-          </div>
-        )}
       </div>
 
       {/* Progress */}
