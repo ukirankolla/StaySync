@@ -17,12 +17,14 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [showOtpSuggestion, setShowOtpSuggestion] = useState(false)
   const [quote] = useState(() => LOGIN_QUOTES[Math.floor(Math.random() * LOGIN_QUOTES.length)])
 
   const submit = async (e) => {
     e.preventDefault()
     setError('')
     setBusy(true)
+    setShowOtpSuggestion(false)
     const body = identifier.includes('@')
       ? { email: identifier, password }
       : { phone: identifier, password }
@@ -31,6 +33,9 @@ export default function Login() {
       navigate('/discover')
     } catch (err) {
       setError(err.message)
+      if (err.message.includes('OTP') || err.message.includes('no password')) {
+        setShowOtpSuggestion(true)
+      }
     } finally {
       setBusy(false)
     }
@@ -44,6 +49,14 @@ export default function Login() {
           <p className="center muted" style={{ fontSize: '.9rem', marginTop: -4 }}>Log in to find your perfect flatmate</p>
           {location.state?.notice && <div className="alert alert-success">{location.state.notice}</div>}
           {error && <div className="alert">{error}</div>}
+          {showOtpSuggestion && (
+            <div className="alert alert-info">
+              <strong>Try OTP login instead?</strong>
+              <div style={{ marginTop: 6 }}>
+                <Link to="/otp" style={{ fontWeight: 600 }}>Log in with OTP →</Link>
+              </div>
+            </div>
+          )}
           <div className="field">
             <label>Email or phone</label>
             <input className="input" value={identifier} onChange={(e) => setIdentifier(e.target.value)}

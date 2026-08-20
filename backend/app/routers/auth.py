@@ -58,15 +58,20 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     return _user_to_response(user)
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login")
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = _find_user(db, payload.email.lower() if payload.email else None, payload.phone)
-    if not user or not user.hashed_password or not verify_password(payload.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not user:
+        raise HTTPException(status_code=401, detail="No account found with this email or phone. Please register first.")
+    if not user.hashed_password:
+        raise HTTPException(status_code=401, detail="This account was created via OTP and has no password. Use 'Log in with OTP' or 'Forgot password' to set a new password.")
+    if not verify_password(payload.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Incorrect password. Try again or use 'Forgot password' to reset it.")
     if user.is_suspended:
         raise HTTPException(status_code=403, detail="Account suspended")
     track(db, user.id, "login", {})
-    return _user_to_response(user)
+    resp = _user_to_response(user)
+    return resp.model_dump()
 
 
 @router.post("/otp/request")
