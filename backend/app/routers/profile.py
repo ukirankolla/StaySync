@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+import secrets as _secrets
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -17,6 +19,7 @@ from ..schemas import (
 from ..security import generate_otp, otp_expiry
 from ..config import settings
 from ..services.agents import get_agent
+from ..services import ratelimit
 from ..services.events import track
 from ..services.notify import send_otp
 
@@ -121,13 +124,19 @@ def request_verification(user: User = Depends(get_current_user), db: Session = D
     identifier = user.email or user.phone
     if not identifier:
         raise HTTPException(status_code=400, detail="Add an email or phone to your account first")
+    ratelimit.hit(f"verify:send:{user.id}", 5, 600, "Too many codes requested. Wait a few minutes and try again.")
     code = generate_otp()
-    db.add(OtpCode(identifier=identifier, code=code, purpose="verify", expires_at=otp_expiry()))
+    row = OtpCode(identifier=identifier, code=code, purpose="verify", expires_at=otp_expiry())
+    db.add(row)
     db.commit()
     delivery = send_otp(identifier, code)
+    if not delivery["delivered"] and not settings.dev_mode:
+        db.delete(row)
+        db.commit()
+        raise HTTPException(status_code=503, detail="We couldn't send the code right now. Please try again later.")
     return {"message": f"Verification code sent to {identifier}", "channel": delivery["channel"],
             "delivered": delivery["delivered"],
-            "dev_code": code if (not delivery["delivered"] and settings.env == "development") else None}
+            "dev_code": code if (not delivery["delivered"] and settings.dev_mode) else None}
 
 
 @router.post("/verify/confirm", response_model=ProfileOut)
@@ -136,12 +145,16 @@ def confirm_verification(payload: VerifyProfileRequest, user: User = Depends(get
     identifier = user.email or user.phone
     if not identifier:
         raise HTTPException(status_code=400, detail="Add an email or phone to your account first")
+    fail_key = f"verify:fail:{user.id}"
+    ratelimit.ensure_not_locked(fail_key, 5, 600, "Too many wrong codes. Request a new code in a few minutes.")
     now = datetime.now(timezone.utc)
     otp = db.query(OtpCode).filter(
         OtpCode.identifier == identifier, OtpCode.purpose == "verify", OtpCode.is_used.is_(False)
     ).order_by(OtpCode.created_at.desc()).first()
-    if not otp or otp.expires_at.replace(tzinfo=timezone.utc) < now or otp.code != payload.code:
+    if not otp or otp.expires_at.replace(tzinfo=timezone.utc) < now or not _secrets.compare_digest(otp.code, payload.code or ""):
+        ratelimit.record_failure(fail_key)
         raise HTTPException(status_code=401, detail="Invalid or expired OTP")
+    ratelimit.clear(fail_key)
     otp.is_used = True
     profile = db.query(Profile).filter(Profile.user_id == user.id).first()
     profile.is_verified = True

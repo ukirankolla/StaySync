@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import ProfileModal from '../components/ProfileModal'
@@ -6,6 +7,7 @@ import Avatar from '../components/Avatar'
 import { listingImage, roomImage } from '../lib/images'
 
 export default function Listings() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [listings, setListings] = useState([])
   const [mine, setMine] = useState([])
@@ -76,7 +78,7 @@ export default function Listings() {
     setContactingResident(r.user_id); setErr('')
     try {
       const res = await api(`/listings/${l.id}/residents/${r.user_id}/contact`, { method: 'POST' })
-      if (res.status === 'accepted') { window.location.href = `/chat/${res.connection_id}` }
+      if (res.status === 'accepted') { navigate(`/chat/${res.connection_id}`) }
       else flash(`Request sent to ${r.full_name}. Once they accept, you can chat.`)
     } catch (e) { setErr(e.message) } finally { setContactingResident(null) }
   }
@@ -142,7 +144,7 @@ export default function Listings() {
     setContacting(l.id); setErr('')
     try {
       const res = await api(`/listings/${l.id}/contact`, { method: 'POST' })
-      if (res.status === 'accepted') { window.location.href = `/chat/${res.connection_id}` }
+      if (res.status === 'accepted') { navigate(`/chat/${res.connection_id}`) }
       else { setNotice('Request sent to the owner. Once they accept, you can chat.'); setTimeout(() => setNotice(''), 5000) }
     } catch (e) { setErr(e.message) } finally { setContacting(null) }
   }

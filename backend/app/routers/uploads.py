@@ -5,6 +5,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 
 from ..config import settings
+from ..services import ratelimit
 from ..deps import get_current_user
 from ..models import User
 
@@ -14,6 +15,17 @@ ALLOWED_TYPES = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp
 MAX_SIZE = 5 * 1024 * 1024  # 5MB
 
 router = APIRouter(prefix="/upload", tags=["upload"])
+
+
+def _looks_like(content_type: str, data: bytes) -> bool:
+    """Check the file's magic bytes: the Content-Type header is chosen by the client and can lie."""
+    if content_type == "image/jpeg":
+        return data[:3] == b"\xff\xd8\xff"
+    if content_type == "image/png":
+        return data[:8] == b"\x89PNG\r\n\x1a\n"
+    if content_type == "image/webp":
+        return data[:4] == b"RIFF" and data[8:12] == b"WEBP"
+    return False
 
 
 async def _upload_to_supabase(filename: str, data: bytes, content_type: str):
@@ -34,9 +46,12 @@ async def upload_image(file: UploadFile = File(...), user: User = Depends(get_cu
     ext = ALLOWED_TYPES.get(file.content_type)
     if not ext:
         raise HTTPException(status_code=400, detail="Only JPG, PNG or WEBP images are allowed")
-    data = await file.read()
+    ratelimit.hit(f"upload:{user.id}", 30, 600, "Too many uploads. Please wait a few minutes.")
+    data = await file.read(MAX_SIZE + 1)
     if len(data) > MAX_SIZE:
         raise HTTPException(status_code=400, detail="Image too large (max 5MB)")
+    if not _looks_like(file.content_type, data):
+        raise HTTPException(status_code=400, detail="That file isn't a valid JPG, PNG or WEBP image")
     filename = f"{uuid.uuid4().hex}{ext}"
 
     if settings.storage_backend == "supabase":

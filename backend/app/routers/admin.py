@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import HTTPException, APIRouter, Depends
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -83,18 +83,22 @@ def list_users(search: str | None = None, db: Session = Depends(get_db)):
 @router.post("/users/{user_id}/suspend")
 def suspend_user(user_id: int, db: Session = Depends(get_db)):
     user = db.get(User, user_id)
-    if user:
-        user.is_suspended = True
-        db.commit()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.role == "admin":
+        raise HTTPException(status_code=400, detail="Admin accounts can't be suspended")
+    user.is_suspended = True
+    db.commit()
     return {"ok": True}
 
 
 @router.post("/users/{user_id}/unsuspend")
 def unsuspend_user(user_id: int, db: Session = Depends(get_db)):
     user = db.get(User, user_id)
-    if user:
-        user.is_suspended = False
-        db.commit()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_suspended = False
+    db.commit()
     return {"ok": True}
 
 
@@ -112,7 +116,7 @@ def review_report(report_id: int, action: str, db: Session = Depends(get_db)):
 
     report = db.get(Report, report_id)
     if not report:
-        return {"error": "not found"}
+        raise HTTPException(status_code=404, detail="Report not found")
     _resolve_report(db, report, action, admin=None)
     db.commit()
     return {"ok": True}
@@ -144,12 +148,14 @@ def admin_listings(status: str | None = None, db: Session = Depends(get_db)):
 def review_listing(listing_id: int, action: str, db: Session = Depends(get_db)):
     listing = db.get(Listing, listing_id)
     if not listing:
-        return {"error": "not found"}
+        raise HTTPException(status_code=404, detail="Listing not found")
     if action == "approve":
         listing.status = "approved"
         listing.is_active = True
     elif action == "reject":
         listing.status = "rejected"
         listing.is_active = False
+    else:
+        raise HTTPException(status_code=400, detail="action must be approve or reject")
     db.commit()
     return {"ok": True}

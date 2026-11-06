@@ -40,47 +40,82 @@ def _pair_score(db: Session, viewer_id: int, peer_id: int) -> tuple[float | None
     return result["score"], result["reasons"][:3]
 
 
+def _serialize_many(listings: list[Listing], viewer: User, db: Session) -> list[ListingOut]:
+    """ListingOut plus owner name and the people already living there.
+
+    Owners, residents, their users and profiles are fetched in bulk (a handful of queries
+    for the whole page) instead of several queries per listing.
+    """
+    if not listings:
+        return []
+    ids = [l.id for l in listings]
+    owner_ids = {l.owner_id for l in listings}
+
+    rows = db.query(ListingResident).filter(ListingResident.listing_id.in_(ids)).order_by(ListingResident.created_at).all()
+    resident_ids = {r.user_id for r in rows}
+    users = {u.id: u for u in db.query(User).filter(User.id.in_(owner_ids | resident_ids)).all()} if (owner_ids | resident_ids) else {}
+    profiles = {p.user_id: p for p in db.query(Profile).filter(Profile.user_id.in_(owner_ids | resident_ids)).all()}
+    by_listing: dict[int, list[ListingResident]] = {}
+    for r in rows:
+        by_listing.setdefault(r.listing_id, []).append(r)
+
+    score_cache: dict[int, tuple[float | None, list[str]]] = {}
+    block_cache: dict[int, bool] = {}
+
+    outs: list[ListingOut] = []
+    for listing in listings:
+        out = ListingOut.model_validate(listing)
+        op = profiles.get(listing.owner_id)
+        out.owner_name = op.full_name if op else None
+        is_owner = viewer.id == listing.owner_id
+
+        residents: list[ResidentOut] = []
+        for r in by_listing.get(listing.id, []):
+            if is_owner:
+                if r.status == "declined":
+                    continue
+            elif not (r.status == "accepted" or r.user_id == viewer.id):
+                # Others only see confirmed residents (and their own pending invite, so they can answer it).
+                continue
+            u = users.get(r.user_id)
+            if not u or u.is_suspended or not u.is_active:
+                continue
+            if r.user_id != viewer.id:
+                if r.user_id not in block_cache:
+                    block_cache[r.user_id] = _blocked(db, viewer.id, r.user_id)
+                if block_cache[r.user_id]:
+                    continue
+            prof = profiles.get(r.user_id)
+            if r.user_id == viewer.id:
+                score, reasons = None, []
+            else:
+                if r.user_id not in score_cache:
+                    score_cache[r.user_id] = _pair_score(db, viewer.id, r.user_id)
+                score, reasons = score_cache[r.user_id]
+            residents.append(ResidentOut(
+                id=r.id, user_id=r.user_id, status=r.status,
+                full_name=prof.full_name if prof else "Resident",
+                age=prof.age if prof else None,
+                occupation=prof.occupation if prof else None,
+                occupation_detail=prof.occupation_detail if prof else None,
+                bio=prof.bio if prof else None,
+                photos=prof.photos if prof and prof.photos else [],
+                is_verified=prof.is_verified if prof else False,
+                score=score, reasons=reasons, is_you=r.user_id == viewer.id,
+            ))
+        out.residents = residents
+        outs.append(out)
+    return outs
+
+
 def _serialize(listing: Listing, viewer: User, db: Session) -> ListingOut:
-    """ListingOut plus owner name and the people already living there."""
-    out = ListingOut.model_validate(listing)
-    owner_profile = db.query(Profile).filter(Profile.user_id == listing.owner_id).first()
-    out.owner_name = owner_profile.full_name if owner_profile else None
-
-    is_owner = viewer.id == listing.owner_id
-    rows = db.query(ListingResident).filter(ListingResident.listing_id == listing.id)
-    if not is_owner:
-        # Others only see confirmed residents (and the viewer's own pending invite, so they can answer it).
-        rows = rows.filter(or_(ListingResident.status == "accepted", ListingResident.user_id == viewer.id))
-    else:
-        rows = rows.filter(ListingResident.status != "declined")
-
-    residents: list[ResidentOut] = []
-    for r in rows.order_by(ListingResident.created_at).all():
-        user = db.get(User, r.user_id)
-        if not user or user.is_suspended or not user.is_active:
-            continue
-        if r.user_id != viewer.id and _blocked(db, viewer.id, r.user_id):
-            continue
-        prof = db.query(Profile).filter(Profile.user_id == r.user_id).first()
-        score, reasons = (None, []) if r.user_id == viewer.id else _pair_score(db, viewer.id, r.user_id)
-        residents.append(ResidentOut(
-            id=r.id, user_id=r.user_id, status=r.status,
-            full_name=prof.full_name if prof else "Resident",
-            age=prof.age if prof else None,
-            occupation=prof.occupation if prof else None,
-            occupation_detail=prof.occupation_detail if prof else None,
-            bio=prof.bio if prof else None,
-            photos=prof.photos if prof and prof.photos else [],
-            is_verified=prof.is_verified if prof else False,
-            score=score, reasons=reasons, is_you=r.user_id == viewer.id,
-        ))
-    out.residents = residents
-    return out
+    return _serialize_many([listing], viewer, db)[0]
 
 
 @router.get("", response_model=list[ListingOut])
 def search_listings(city: str | None = Query(None), area: str | None = Query(None),
                     max_rent: int | None = Query(None), q: str | None = Query(None),
+                    limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0),
                     user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     query = db.query(Listing).filter(Listing.is_active.is_(True), Listing.status == "approved")
     if city:
@@ -91,9 +126,9 @@ def search_listings(city: str | None = Query(None), area: str | None = Query(Non
         query = query.filter(Listing.rent <= max_rent)
     if q:
         query = query.filter(or_(Listing.title.ilike(f"%{q}%"), Listing.description.ilike(f"%{q}%")))
-    listings = query.order_by(Listing.created_at.desc()).all()
+    listings = query.order_by(Listing.created_at.desc()).offset(offset).limit(limit).all()
     track(db, user.id, "listings_searched", {"city": city})
-    return [_serialize(l, user, db) for l in listings]
+    return _serialize_many(listings, user, db)
 
 
 @router.post("", response_model=ListingOut)
@@ -109,7 +144,7 @@ def create_listing(payload: ListingCreate, user: User = Depends(get_current_user
 @router.get("/mine", response_model=list[ListingOut])
 def my_listings(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     rows = db.query(Listing).filter(Listing.owner_id == user.id).order_by(Listing.created_at.desc()).all()
-    return [_serialize(l, user, db) for l in rows]
+    return _serialize_many(rows, user, db)
 
 
 @router.get("/residents/invitations", response_model=list[ResidentInvitation])
@@ -146,6 +181,12 @@ def get_listing(listing_id: int, user: User = Depends(get_current_user), db: Ses
     listing = db.get(Listing, listing_id)
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")
+    # Pending / rejected / deactivated listings are only visible to their owner (and admins).
+    visible = listing.is_active and listing.status == "approved"
+    if not visible and listing.owner_id != user.id and not user.role == "admin":
+        raise HTTPException(status_code=404, detail="Listing not found")
+    if listing.owner_id != user.id and _blocked(db, user.id, listing.owner_id):
+        raise HTTPException(status_code=404, detail="Listing not found")
     return _serialize(listing, user, db)
 
 
@@ -180,6 +221,8 @@ def contact_owner(listing_id: int, user: User = Depends(get_current_user), db: S
         raise HTTPException(status_code=404, detail="Listing not found")
     if listing.owner_id == user.id:
         raise HTTPException(status_code=400, detail="This is your own listing")
+    if _blocked(db, user.id, listing.owner_id):
+        raise HTTPException(status_code=404, detail="Listing not found")
 
     existing = db.query(Connection).filter(
         ((Connection.requester_id == user.id) & (Connection.recipient_id == listing.owner_id))

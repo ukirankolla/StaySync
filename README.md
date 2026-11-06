@@ -112,7 +112,7 @@ python3 -m venv .venv
 source .venv/bin/activate            # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-cp .env.example .env                 # then edit; the defaults work for local development
+cp .env.example .env                 # keep ENV=development locally (ENV defaults to production when unset)
 python scripts/seed.py               # optional: demo users, listings, admin
 python -m uvicorn app.main:app --reload --port 8000
 ```
@@ -138,11 +138,13 @@ All backend settings are environment variables (see `backend/.env.example`).
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
-| `ENV` | `development` or `production` | `development` |
+| `ENV` | `development` or `production`. Production is the default when unset | `production` |
 | `DATABASE_URL` | SQLAlchemy URL (`postgresql://…` in production) | local SQLite file |
-| `JWT_SECRET` | Signs access tokens. **Must be a long random string in production** | placeholder |
+| `JWT_SECRET` | Signs access tokens. **Must be a long random string in production**; a weak one is replaced by a random key at boot (sessions reset on restart) | placeholder |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Token lifetime | 10080 (7 days) |
 | `CORS_ORIGINS` | Comma-separated allowed web origins (native app origins are always allowed) | localhost + Vercel |
+| `CORS_ORIGIN_REGEX` | Extra origins allowed by pattern (Vercel previews) | `^https://stay-?sync[a-z0-9-]*\.vercel\.app$` |
+| `ALLOW_SEED_RESET` | Required in production for `SEED_RESET` to take effect | `false` |
 | `PUBLIC_BASE_URL` | Public URL of the API so uploaded photos resolve everywhere | empty |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Admin account created on first boot. **Set a strong password in production** | placeholder |
 | `SEED_ON_START` / `SEED_RESET` | Bootstrap an empty database / drop and recreate it. Development and staging only | `false` |
@@ -249,6 +251,21 @@ docs/
 - [ ] `BREVO_API_KEY` (or SMTP) set, so OTPs are delivered by email
 - [ ] HTTPS everywhere (required by the mobile apps)
 - [ ] One backend worker, **or** replace the in-memory `ChatManager` with Redis pub/sub before scaling out
+
+### Security defaults
+
+- Production never returns OTP codes in API responses; if no email/SMS provider is configured the request fails with a clear error.
+- Login, registration, OTP and chat/upload endpoints are rate limited, and repeated wrong codes lock out the code.
+- On boot in production, any admin still using the old default password is rotated to `ADMIN_PASSWORD` (or locked if none is set), and seeded demo accounts are locked.
+- Passwords need at least 8 characters. Uploaded images are checked by content, not just file extension.
+
+## Testing
+
+```bash
+cd backend && pip install -r requirements-dev.txt && python -m pytest -q tests
+```
+
+CI (`.github/workflows/ci.yml`) runs the backend tests and a frontend build on every pull request.
 
 ## Roadmap
 

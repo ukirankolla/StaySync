@@ -76,7 +76,7 @@ export default function ForgotPassword() {
           </div>
           <div className="field">
             <label>New password</label>
-            <input className="input" type="password" value={newPassword} minLength={6}
+            <input className="input" type="password" value={newPassword} minLength={8}
                    onChange={(e) => setNewPassword(e.target.value)} required />
           </div>
           <button className="btn btn-primary btn-block" disabled={busy}>{busy ? 'Resetting…' : 'Reset password'}</button>

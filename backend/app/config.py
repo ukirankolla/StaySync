@@ -1,5 +1,10 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
 import re
+import secrets
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEFAULT_ADMIN_PASSWORD = "admin123"  # published in old docs: must never protect a real admin account
+WEAK_JWT_SECRETS = {"", "change-me-in-production", "change-me-to-a-long-random-string", "secret", "changeme"}
 
 
 class Settings(BaseSettings):
@@ -14,14 +19,21 @@ class Settings(BaseSettings):
     otp_expire_minutes: int = 10
     otp_secret_salt: str = "staysync-otp"
     cors_origins: str = "http://localhost:5173,http://localhost:3000,https://staysync.vercel.app,https://stay-sync-omega.vercel.app"
-    env: str = "development"
+    # Vercel preview/production URLs of this project only (not every *.vercel.app site).
+    cors_origin_regex: str = r"^https://stay-?sync[a-z0-9-]*\.vercel\.app$"
+    # Secure by default: anything other than an explicit "development" is treated as production.
+    # Local development sets ENV=development in backend/.env (see .env.example).
+    env: str = "production"
     # Absolute base URL of this API, set in production so uploaded photos resolve
     # from any host (e.g. https://backend.up.railway.app).
     public_base_url: str = ""
-    # Seed demo data on boot when the database is empty (used on first deploy).
+    # Create the admin (and, in development only, demo data) on boot when the database is empty.
     seed_on_start: bool = False
-    # Drop all tables and bootstrap on boot (used to reset a fresh database).
+    # Drop all tables and bootstrap on boot. Ignored in production unless allow_seed_reset is also true,
+    # so a forgotten flag can never wipe the live database on a restart.
     seed_reset: bool = False
+    allow_seed_reset: bool = False
+    jwt_secret_is_ephemeral: bool = False
 
     # Owner/admin login. Created on boot when seed_on_start/seed_reset is on and
     # the admin account does not exist yet. Configure via env vars in production.
@@ -50,6 +62,15 @@ class Settings(BaseSettings):
     # Origins used by the Android / iOS app shells (Capacitor). Always allowed, so setting
     # CORS_ORIGINS in production can never lock the store apps out.
     native_app_origins: tuple[str, ...] = ("https://localhost", "capacitor://localhost", "http://localhost")
+
+    @property
+    def dev_mode(self) -> bool:
+        """True only for an explicit local-development setup (OTP codes may be shown on screen)."""
+        return self.env.strip().lower() in {"development", "dev", "local", "test", "testing"}
+
+    @property
+    def is_production(self) -> bool:
+        return not self.dev_mode
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -90,3 +111,11 @@ def parse_mail_from(value: str, fallback_email: str) -> tuple[str, str]:
 
 
 settings = Settings()
+
+if settings.is_production and (settings.jwt_secret in WEAK_JWT_SECRETS or len(settings.jwt_secret) < 16):
+    # A guessable signing key lets anyone forge admin tokens. Use a random per-process key instead of
+    # booting with it (sessions end on restart until a real JWT_SECRET is configured).
+    settings.jwt_secret = secrets.token_urlsafe(48)
+    settings.jwt_secret_is_ephemeral = True
+    print("[StaySync] WARNING: JWT_SECRET is missing or weak. Using a temporary random key; "
+          "users will be signed out on every restart. Set a long random JWT_SECRET.", flush=True)

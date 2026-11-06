@@ -273,7 +273,7 @@ export default function Profile() {
           <div className="field">
             <label>New password</label>
             <input className="input" type="password" value={pw.new_password}
-                   onChange={(e) => setPw({ ...pw, new_password: e.target.value })} required minLength={6} />
+                   onChange={(e) => setPw({ ...pw, new_password: e.target.value })} required minLength={8} />
           </div>
         </div>
         <button className="btn btn-sm">Update password</button>

@@ -8,6 +8,7 @@ from ..models import Block, Connection, Message, User
 from ..schemas import MessageCreate, MessageOut
 from ..security import decode_token
 from ..services.chat_manager import chat_manager
+from ..services import ratelimit
 from ..services.events import track
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -20,13 +21,16 @@ def _blocked_set(db: Session, user_id: int) -> set[int]:
 
 
 @router.get("/connections/{connection_id}/messages", response_model=list[MessageOut])
-def list_messages(connection_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def list_messages(connection_id: int, limit: int = Query(300, ge=1, le=1000),
+                  user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     conn = db.get(Connection, connection_id)
     if not conn:
         raise HTTPException(status_code=404, detail="Connection not found")
     if conn.requester_id != user.id and conn.recipient_id != user.id:
         raise HTTPException(status_code=403, detail="Not part of this conversation")
-    msgs = db.query(Message).filter(Message.connection_id == connection_id).order_by(Message.created_at.asc()).all()
+    # most recent `limit` messages, oldest first
+    msgs = (db.query(Message).filter(Message.connection_id == connection_id)
+            .order_by(Message.created_at.desc(), Message.id.desc()).limit(limit).all())[::-1]
     for m in msgs:
         if m.sender_id != user.id:
             m.is_read = True
@@ -46,6 +50,7 @@ async def send_message(connection_id: int, payload: MessageCreate, user: User = 
     peer_id = conn.requester_id if conn.recipient_id == user.id else conn.recipient_id
     if peer_id in _blocked_set(db, user.id):
         raise HTTPException(status_code=403, detail="Cannot message this user")
+    ratelimit.hit(f"msg:{user.id}", 60, 60, "You're sending messages too fast. Slow down a little.")
 
     msg = Message(connection_id=connection_id, sender_id=user.id, content=payload.content)
     db.add(msg)
@@ -67,7 +72,11 @@ async def chat_ws(ws: WebSocket, token: str = Query("")):
     if not payload:
         await ws.close(code=4401)
         return
-    user_id = int(payload.get("sub"))
+    try:
+        user_id = int(payload.get("sub"))
+    except (TypeError, ValueError):
+        await ws.close(code=4401)
+        return
     db = SessionLocal()
     try:
         user = db.get(User, user_id)

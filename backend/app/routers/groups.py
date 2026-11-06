@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_user
-from ..models import Profile, RoomGroup, User, group_members
+from ..models import Block, Profile, RoomGroup, User, group_members
 from ..schemas import GroupCreate, GroupInvite, GroupOut, GroupUpdate
 from ..services.events import track
 
@@ -47,7 +47,8 @@ def list_my_groups(user: User = Depends(get_current_user), db: Session = Depends
 @router.get("/{group_id}", response_model=GroupOut)
 def get_group(group_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     group = db.get(RoomGroup, group_id)
-    if not group:
+    if not group or user.id not in {m.id for m in group.members}:
+        # members only: a group lists its members' names, budget and target area
         raise HTTPException(status_code=404, detail="Group not found")
     return _group_out(db, group)
 
@@ -61,8 +62,13 @@ def invite_to_group(group_id: int, payload: GroupInvite, user: User = Depends(ge
     if group.owner_id != user.id:
         raise HTTPException(status_code=403, detail="Only the group owner can invite")
     target = db.get(User, payload.user_id)
-    if not target:
+    if not target or not target.is_active or target.is_suspended:
         raise HTTPException(status_code=404, detail="User not found")
+    if db.query(Block.id).filter(
+        ((Block.blocker_id == user.id) & (Block.blocked_id == target.id))
+        | ((Block.blocker_id == target.id) & (Block.blocked_id == user.id))
+    ).first():
+        raise HTTPException(status_code=400, detail="You can't invite this user")
     member_ids = {m.id for m in group.members}
     if payload.user_id in member_ids:
         raise HTTPException(status_code=409, detail="Already a member")
