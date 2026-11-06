@@ -84,7 +84,7 @@ export default function Discover() {
       </div>
       <p className="muted mb-16">Ranked by AI compatibility score. Transparency first — every score comes with reasons.</p>
 
-      <div className="card mb-16" style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'end' }}>
+      <div className="card mb-16 filter-bar">
         <div className="field">
           <label>Location</label>
           <input className="input" placeholder="e.g. Delhi, Hyderabad, Koramangala" value={filters.area}

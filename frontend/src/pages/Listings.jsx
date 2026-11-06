@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import ProfileModal from '../components/ProfileModal'
+import Avatar from '../components/Avatar'
 import { listingImage, roomImage } from '../lib/images'
 
 export default function Listings() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [listings, setListings] = useState([])
   const [mine, setMine] = useState([])
@@ -21,6 +24,9 @@ export default function Listings() {
   const [notice, setNotice] = useState('')
   const [editId, setEditId] = useState(null)
   const [viewOwner, setViewOwner] = useState(null)
+  const [invites, setInvites] = useState([])
+  const [residentInput, setResidentInput] = useState({})
+  const [contactingResident, setContactingResident] = useState(null)
 
   const load = () => {
     api(`/listings${filters.city ? `?city=${encodeURIComponent(filters.city)}` : ''}${filters.maxRent ? `${filters.city ? '&' : '?'}max_rent=${filters.maxRent}` : ''}`)
@@ -31,6 +37,51 @@ export default function Listings() {
 
   const loadMine = () => api('/listings/mine').then(setMine).catch(() => {})
   useEffect(() => { loadMine() }, [])
+
+  const loadInvites = () => api('/listings/residents/invitations').then(setInvites).catch(() => {})
+  useEffect(() => { loadInvites() }, [])
+
+  const flash = (msg) => { setNotice(msg); setTimeout(() => setNotice(''), 5000) }
+  const refreshAll = () => { load(); loadMine(); loadInvites() }
+
+  const respondInvite = async (inv, action) => {
+    setErr('')
+    try {
+      await api(`/listings/residents/${inv.id}/respond?action=${action}`, { method: 'POST' })
+      flash(action === 'accept' ? 'You are now listed as a resident. Seekers can chat with you.' : 'Invitation declined.')
+      refreshAll()
+    } catch (e) { setErr(e.message) }
+  }
+
+  const addResident = async (l) => {
+    const identifier = (residentInput[l.id] || '').trim()
+    if (!identifier) return
+    setErr('')
+    try {
+      await api(`/listings/${l.id}/residents`, { method: 'POST', body: { identifier } })
+      setResidentInput((r) => ({ ...r, [l.id]: '' }))
+      flash('Invitation sent. They will show on the listing once they confirm.')
+      loadMine()
+    } catch (e) { setErr(e.message) }
+  }
+
+  const removeResident = async (l, userId, isSelf) => {
+    if (!confirm(isSelf ? 'Remove yourself from this listing?' : 'Remove this resident from the listing?')) return
+    setErr('')
+    try {
+      await api(`/listings/${l.id}/residents/${userId}`, { method: 'DELETE' })
+      refreshAll()
+    } catch (e) { setErr(e.message) }
+  }
+
+  const contactResident = async (l, r) => {
+    setContactingResident(r.user_id); setErr('')
+    try {
+      const res = await api(`/listings/${l.id}/residents/${r.user_id}/contact`, { method: 'POST' })
+      if (res.status === 'accepted') { navigate(`/chat/${res.connection_id}`) }
+      else flash(`Request sent to ${r.full_name}. Once they accept, you can chat.`)
+    } catch (e) { setErr(e.message) } finally { setContactingResident(null) }
+  }
 
   const emptyForm = { title: '', description: '', city: '', area: '', rent: '', deposit: '', room_type: 'private', bhk: '', amenities: '', available_from: '', looking_for: '', photos: [] }
 
@@ -93,7 +144,7 @@ export default function Listings() {
     setContacting(l.id); setErr('')
     try {
       const res = await api(`/listings/${l.id}/contact`, { method: 'POST' })
-      if (res.status === 'accepted') { window.location.href = `/chat/${res.connection_id}` }
+      if (res.status === 'accepted') { navigate(`/chat/${res.connection_id}`) }
       else { setNotice('Request sent to the owner. Once they accept, you can chat.'); setTimeout(() => setNotice(''), 5000) }
     } catch (e) { setErr(e.message) } finally { setContacting(null) }
   }
@@ -105,12 +156,62 @@ export default function Listings() {
     catch (e) { alert(e.message) }
   }
 
+  const renderResidents = (l, canManage) => {
+    const list = l.residents || []
+    if (list.length === 0 && !canManage) return null
+    return (
+      <div className="mt-8">
+        <div className="section-label">
+          {list.length > 0 ? 'People living here' : 'No residents listed yet'}
+        </div>
+        {list.map((r) => (
+          <div key={r.id} className="resident-row">
+            <Avatar name={r.full_name} photo={r.photos?.[0]} size={40} style={{ flexShrink: 0 }} />
+            <div className="resident-info">
+              <div className="resident-name">
+                {r.full_name}{r.is_you ? ' (you)' : ''}
+                {r.is_verified && <span className="chip chip-green">verified</span>}
+                {r.status === 'pending' && <span className="status-pill status-pending">awaiting confirmation</span>}
+              </div>
+              <div className="muted" style={{ fontSize: '.8rem' }}>
+                {[r.age && `${r.age} yrs`, r.occupation_detail || r.occupation].filter(Boolean).join(' · ')}
+              </div>
+              {r.reasons?.length > 0 && <div className="muted" style={{ fontSize: '.78rem' }}>{r.reasons[0]}</div>}
+            </div>
+            {r.score != null && <span className="chip chip-green" style={{ flexShrink: 0 }}>{Math.round(r.score)}% match</span>}
+            <div className="resident-actions">
+              <button className="btn btn-ghost btn-sm" onClick={() => setViewOwner(r.user_id)}>Profile</button>
+              {!r.is_you && r.status === 'accepted' && l.owner_id !== user.id && (
+                <button className="btn btn-primary btn-sm" disabled={contactingResident === r.user_id} onClick={() => contactResident(l, r)}>
+                  {contactingResident === r.user_id ? 'Sending…' : '💬 Chat'}
+                </button>
+              )}
+              {(canManage || r.is_you) && (
+                <button className="btn btn-ghost btn-sm" onClick={() => removeResident(l, r.user_id, r.is_you)}>
+                  {r.is_you ? 'Leave' : 'Remove'}
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+        {canManage && (
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+            <input className="input" style={{ flex: 1, minWidth: 180 }} placeholder="Flatmate's email or phone (must have a StaySync account)"
+                   value={residentInput[l.id] || ''} onChange={(e) => setResidentInput((r) => ({ ...r, [l.id]: e.target.value }))}
+                   onKeyDown={(e) => { if (e.key === 'Enter') addResident(l) }} />
+            <button className="btn btn-sm" onClick={() => addResident(l)}>+ Add resident</button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h2 style={{ marginBottom: 4 }}>Flats & rooms</h2>
-          <div className="live-indicator"><span className="live-dot" /> AI-generated previews</div>
+          <div className="live-indicator"><span className="live-dot" /> Chat with owners &amp; residents</div>
         </div>
         <button className="btn btn-primary btn-sm" onClick={() => setShowForm((s) => !s)}>
           {showForm ? 'Close' : '+ Post a listing'}
@@ -120,7 +221,25 @@ export default function Listings() {
       {notice && <div className="alert alert-success mt-16">{notice}</div>}
       {err && <div className="alert mt-16">{err}</div>}
 
-      <div className="card mt-16 mb-16" style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'end' }}>
+      {invites.length > 0 && (
+        <div className="card mt-16">
+          <strong>🏠 Do you live here?</strong>
+          {invites.map((inv) => (
+            <div key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 10 }}>
+              <span>
+                {inv.invited_by || 'A poster'} listed you as living at <strong>{inv.listing_title}</strong>
+                {' '}({[inv.area, inv.city].filter(Boolean).join(', ')}). Confirm so people looking for a room can chat with you.
+              </span>
+              <span style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-primary btn-sm" onClick={() => respondInvite(inv, 'accept')}>Yes, I live here</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => respondInvite(inv, 'decline')}>No</button>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="card mt-16 mb-16 filter-bar">
         <div className="field">
           <label>City</label>
           <input className="input" value={filters.city} onChange={(e) => setFilters({ ...filters, city: e.target.value })}
@@ -217,10 +336,12 @@ export default function Listings() {
                 </div>
               )}
               <div className="mt-8" style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
-                {l.amenities.map((a) => <span key={a} className="chip chip-gray">{a}</span>)}
+                {l.amenities.map((a) => <span key={a} className="chip chip-gray">{String(a).replace(/_/g, ' ')}</span>)}
               </div>
               {l.available_from && <p className="muted mt-8" style={{ fontSize: '.82rem' }}>Available from {l.available_from}</p>}
-              <div className="mt-8" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {l.owner_name && <p className="muted mt-8" style={{ fontSize: '.82rem' }}>Posted by {l.owner_name}</p>}
+              {renderResidents(l, false)}
+              <div className="mt-8 listing-actions">
                 {l.owner_id !== user.id && (
                   <>
                     <button className="btn btn-primary btn-sm" disabled={contacting === l.id} onClick={() => contact(l)}>
@@ -252,6 +373,8 @@ export default function Listings() {
                   </div>
                 </div>
                 <p className="muted mt-8 mb-8">₹{l.rent.toLocaleString('en-IN')}/mo · {l.city}</p>
+                {renderResidents(l, true)}
+                <div className="mb-8" />
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button className="btn btn-sm" onClick={() => startEdit(l)}>Edit</button>
                   {l.status === 'approved' && (

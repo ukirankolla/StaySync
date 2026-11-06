@@ -7,6 +7,7 @@ fall back to SMTP, and finally to console logging so the app works in dev.
 
 from __future__ import annotations
 
+import html as html_lib
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -102,6 +103,7 @@ def send_otp(identifier: str, code: str) -> dict:
 def send_welcome_email(to_email: str, full_name: str = "") -> bool:
     """Thank-you / onboarding email sent on first-time signup."""
     name = full_name or "there"
+    safe_name = html_lib.escape(name)  # full_name is user-controlled: never put it into HTML raw
     subject = "Welcome to StaySync — let's find your roommates"
     text = (
         f"Hi {name},\n\n"
@@ -121,7 +123,7 @@ def send_welcome_email(to_email: str, full_name: str = "") -> bool:
         '<div style="background:#4f46e5;color:#fff;padding:24px;text-align:center">'
         '<h2 style="margin:0">Welcome to StaySync</h2></div>'
         '<div style="padding:28px;color:#1e293b">'
-        f"<p>Hi {name},</p>"
+        f"<p>Hi {safe_name},</p>"
         "<p>Thanks for signing up! We're excited to help you find a roommate who actually fits.</p>"
         "<p>What to do next:</p><ol>"
         "<li>Complete your profile (city, budget, move-in date).</li>"

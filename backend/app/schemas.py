@@ -2,16 +2,46 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from .questionnaire import QUESTIONNAIRE
+
+
+def _clean_urls(urls: list[str] | None, max_items: int) -> list[str] | None:
+    """Photos must be our own uploads (/uploads/..) or http(s) URLs; bounded count and length."""
+    if urls is None:
+        return None
+    if len(urls) > max_items:
+        raise ValueError(f"At most {max_items} photos")
+    out = []
+    for u in urls:
+        u = (u or "").strip()
+        if len(u) > 600 or not (u.startswith(("https://", "http://", "/uploads/"))):
+            raise ValueError("Invalid photo URL")
+        out.append(u)
+    return out
+
+
+def _clean_tags(tags: list[str] | None, max_items: int = 20, max_len: int = 40) -> list[str] | None:
+    if tags is None:
+        return None
+    cleaned = []
+    for t in tags:
+        t = (t or "").strip()
+        if t and t not in cleaned:
+            cleaned.append(t[:max_len])
+    return cleaned[:max_items]
 
 
 class RegisterRequest(BaseModel):
     email: EmailStr | None = None
     phone: str | None = None
-    password: str = Field(min_length=6, max_length=128)
+    password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(min_length=1, max_length=120)
+
+
+class DeleteAccountRequest(BaseModel):
+    confirm: str  # must be the word DELETE
 
 
 class LoginRequest(BaseModel):
@@ -38,12 +68,12 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     identifier: str
     code: str
-    new_password: str = Field(min_length=6, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
 
 
 class ChangePasswordRequest(BaseModel):
     current_password: str
-    new_password: str = Field(min_length=6, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
 
 
 class VerifyProfileRequest(BaseModel):
@@ -69,19 +99,31 @@ class UserOut(BaseModel):
 
 
 class ProfileUpdate(BaseModel):
-    full_name: str | None = None
+    full_name: str | None = Field(default=None, max_length=120)
     age: int | None = Field(default=None, ge=16, le=100)
-    occupation: str | None = None
-    occupation_detail: str | None = None
-    city: str | None = None
-    preferred_area: str | None = None
-    budget_min: int | None = Field(default=None, ge=0)
-    budget_max: int | None = Field(default=None, ge=0)
-    move_in_date: str | None = None
-    bio: str | None = None
+    occupation: str | None = Field(default=None, max_length=32)
+    occupation_detail: str | None = Field(default=None, max_length=255)
+    city: str | None = Field(default=None, max_length=64)
+    preferred_area: str | None = Field(default=None, max_length=120)
+    budget_min: int | None = Field(default=None, ge=0, le=10_000_000)
+    budget_max: int | None = Field(default=None, ge=0, le=10_000_000)
+    move_in_date: str | None = Field(default=None, max_length=32)
+    bio: str | None = Field(default=None, max_length=1000)
     is_visible: bool | None = None
     photos: list[str] | None = None
     privacy: dict | None = None
+
+    @field_validator("photos")
+    @classmethod
+    def _photos(cls, v):
+        return _clean_urls(v, 8)
+
+    @field_validator("privacy")
+    @classmethod
+    def _privacy(cls, v):
+        if v is not None and (len(v) > 20 or any(not isinstance(x, bool) for x in v.values())):
+            raise ValueError("privacy must map field names to true/false")
+        return v
 
 
 class ProfileOut(BaseModel):
@@ -212,34 +254,54 @@ class GroupOut(BaseModel):
 
 class ListingCreate(BaseModel):
     title: str = Field(min_length=3, max_length=200)
-    description: str | None = None
-    city: str
-    area: str | None = None
-    address: str | None = None
-    rent: int = Field(ge=0)
-    deposit: int | None = None
-    room_type: str = "private"
-    bhk: str | None = None
+    description: str | None = Field(default=None, max_length=4000)
+    city: str = Field(min_length=1, max_length=64)
+    area: str | None = Field(default=None, max_length=120)
+    address: str | None = Field(default=None, max_length=500)
+    rent: int = Field(ge=0, le=10_000_000)
+    deposit: int | None = Field(default=None, ge=0, le=100_000_000)
+    room_type: str = Field(default="private", max_length=32)
+    bhk: str | None = Field(default=None, max_length=16)
     amenities: list[str] = []
     photos: list[str] = []
-    available_from: str | None = None
-    looking_for: int | None = None
+    available_from: str | None = Field(default=None, max_length=32)
+    looking_for: int | None = Field(default=None, ge=0, le=20)
+
+    @field_validator("amenities")
+    @classmethod
+    def _amenities(cls, v):
+        return _clean_tags(v)
+
+    @field_validator("photos")
+    @classmethod
+    def _photos(cls, v):
+        return _clean_urls(v, 10)
 
 
 class ListingUpdate(BaseModel):
-    title: str | None = None
-    description: str | None = None
-    area: str | None = None
-    address: str | None = None
-    rent: int | None = None
-    deposit: int | None = None
-    room_type: str | None = None
-    bhk: str | None = None
+    title: str | None = Field(default=None, min_length=3, max_length=200)
+    description: str | None = Field(default=None, max_length=4000)
+    area: str | None = Field(default=None, max_length=120)
+    address: str | None = Field(default=None, max_length=500)
+    rent: int | None = Field(default=None, ge=0, le=10_000_000)
+    deposit: int | None = Field(default=None, ge=0, le=100_000_000)
+    room_type: str | None = Field(default=None, max_length=32)
+    bhk: str | None = Field(default=None, max_length=16)
     amenities: list[str] | None = None
     photos: list[str] | None = None
-    available_from: str | None = None
-    looking_for: int | None = None
+    available_from: str | None = Field(default=None, max_length=32)
+    looking_for: int | None = Field(default=None, ge=0, le=20)
     is_active: bool | None = None
+
+    @field_validator("amenities")
+    @classmethod
+    def _amenities(cls, v):
+        return _clean_tags(v)
+
+    @field_validator("photos")
+    @classmethod
+    def _photos(cls, v):
+        return _clean_urls(v, 10)
 
 
 class ListingOut(BaseModel):
@@ -264,6 +326,41 @@ class ListingOut(BaseModel):
     is_active: bool
     status: str
     created_at: datetime
+    owner_name: str | None = None
+    residents: list["ResidentOut"] = []
+
+
+class ResidentOut(BaseModel):
+    """A current resident of a listing, shown to people browsing it."""
+    id: int  # listing_resident row id
+    user_id: int
+    status: str  # pending | accepted (pending only shown to the poster)
+    full_name: str
+    age: int | None = None
+    occupation: str | None = None
+    occupation_detail: str | None = None
+    bio: str | None = None
+    photos: list[str] = []
+    is_verified: bool = False
+    score: float | None = None  # compatibility with the viewer, if both have a questionnaire
+    reasons: list[str] = []
+    is_you: bool = False
+
+
+class ResidentAdd(BaseModel):
+    identifier: str = Field(min_length=3, max_length=255)  # email or phone of a registered user
+
+
+class ResidentInvitation(BaseModel):
+    id: int
+    listing_id: int
+    listing_title: str
+    city: str
+    area: str | None = None
+    invited_by: str | None = None
+
+
+ListingOut.model_rebuild()
 
 
 class ReportCreate(BaseModel):

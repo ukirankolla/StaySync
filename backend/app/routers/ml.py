@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..deps import get_current_user
+from ..deps import get_current_user, require_admin
 from ..models import Questionnaire, User
 from ..services.ml_model import model_available, predict, train
 
@@ -21,6 +21,7 @@ def predict_pair(user: User = Depends(get_current_user), db: Session = Depends(g
 
 
 @router.post("/retrain")
-def retrain():
+def retrain(_admin: User = Depends(require_admin)):
+    """Admin only: retraining is CPU heavy and replaces the model every user is ranked with."""
     result = train(n=5000)
     return {"trained": True, "details": result}

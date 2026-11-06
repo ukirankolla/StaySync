@@ -9,6 +9,7 @@ from .config import settings
 from .database import Base, engine, ensure_schema
 from .routers import admin, auth, chat, groups, listings, matching, ml, moderation, profile, uploads
 from .services import ml_model
+from .services.bootstrap import secure_accounts
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 UPLOAD_DIR = BASE_DIR / "uploads"
@@ -26,7 +27,10 @@ async def lifespan(app: FastAPI):
         print("[StaySync] Database ready")
     except Exception as exc:  # noqa: BLE001
         print(f"[StaySync] DATABASE STARTUP FAILED: {exc}")
-    if settings.seed_reset:
+    if settings.seed_reset and settings.is_production and not settings.allow_seed_reset:
+        print("[StaySync] SEED_RESET ignored in production (it would drop every table). "
+              "Remove SEED_RESET, or also set ALLOW_SEED_RESET=true if you really mean it.", flush=True)
+    elif settings.seed_reset:
         try:
             Base.metadata.drop_all(bind=engine)
             print("[StaySync] SEED_RESET: dropped all tables")
@@ -42,6 +46,10 @@ async def lifespan(app: FastAPI):
             seed()
         except Exception as exc:  # noqa: BLE001
             print(f"[StaySync] Seed on start failed: {exc}")
+    try:
+        secure_accounts()  # production only: lock accounts that still use passwords published in the repo
+    except Exception as exc:  # noqa: BLE001
+        print(f"[StaySync] account safety check failed: {exc}")
     if not ml_model.model_available():
         print("[StaySync] Training ML model on boot…")
         try:
@@ -63,8 +71,8 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
-    allow_origin_regex=r"https://.*\.vercel\.app",
-    allow_credentials=True,
+    allow_origin_regex=settings.cors_origin_regex,
+    allow_credentials=False,  # auth uses a Bearer header, not cookies
     allow_methods=["*"],
     allow_headers=["*"],
 )

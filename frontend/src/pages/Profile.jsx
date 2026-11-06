@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 
@@ -14,8 +14,12 @@ const PRIVACY_FIELDS = [
 ]
 
 export default function Profile() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [delOpen, setDelOpen] = useState(false)
+  const [delText, setDelText] = useState('')
+  const [delBusy, setDelBusy] = useState(false)
+  const [delErr, setDelErr] = useState('')
   const [form, setForm] = useState({
     full_name: '', age: '', occupation: 'student', occupation_detail: '',
     city: '', preferred_area: '', budget_min: '', budget_max: '',
@@ -109,6 +113,14 @@ export default function Profile() {
       const p = await api('/matching/agents/onboarding'); setProgress(p)
       setTimeout(() => setSaved(false), 2500)
     } catch (err) { setError(err.message) } finally { setBusy(false) }
+  }
+
+  const deleteAccount = async () => {
+    setDelBusy(true); setDelErr('')
+    try {
+      await api('/auth/me', { method: 'DELETE', body: { confirm: delText } })
+      logout(); navigate('/')
+    } catch (e) { setDelErr(e.message) } finally { setDelBusy(false) }
   }
 
   return (
@@ -261,11 +273,41 @@ export default function Profile() {
           <div className="field">
             <label>New password</label>
             <input className="input" type="password" value={pw.new_password}
-                   onChange={(e) => setPw({ ...pw, new_password: e.target.value })} required minLength={6} />
+                   onChange={(e) => setPw({ ...pw, new_password: e.target.value })} required minLength={8} />
           </div>
         </div>
         <button className="btn btn-sm">Update password</button>
       </form>
+
+      {/* Account deletion: required by the App Store / Google Play */}
+      <div className="card mt-16" style={{ borderColor: 'rgba(239, 68, 68, 0.35)' }}>
+        <strong>Delete account</strong>
+        <p className="muted mt-8" style={{ fontSize: '.88rem' }}>
+          Permanently erases your profile, matches, chats and group memberships, and takes your listings down. This can't be undone.
+        </p>
+        {!delOpen ? (
+          <button type="button" className="btn btn-ghost btn-sm mt-8" style={{ color: '#fca5a5' }} onClick={() => setDelOpen(true)}>
+            Delete my account…
+          </button>
+        ) : (
+          <div className="mt-8" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <input className="input" style={{ flex: 1, minWidth: 160 }} placeholder='Type DELETE to confirm'
+                   value={delText} onChange={(e) => setDelText(e.target.value)} autoCapitalize="characters" />
+            <button type="button" className="btn btn-sm" style={{ background: '#dc2626', color: '#fff' }}
+                    disabled={delBusy || delText.trim().toUpperCase() !== 'DELETE'} onClick={deleteAccount}>
+              {delBusy ? 'Deleting…' : 'Delete forever'}
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setDelOpen(false); setDelText(''); setDelErr('') }}>Cancel</button>
+          </div>
+        )}
+        {delErr && <div className="alert mt-8">{delErr}</div>}
+      </div>
+
+      {/* Phones have no top nav links: account actions live here */}
+      <div className="card mt-16 mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {user?.role === 'admin' && <Link to="/admin" className="btn btn-ghost btn-block">Admin dashboard</Link>}
+        <button type="button" className="btn btn-ghost btn-block" onClick={() => { logout(); navigate('/') }}>Log out</button>
+      </div>
     </div>
   )
 }

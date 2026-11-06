@@ -63,7 +63,7 @@ export default function Chat() {
   const active = conns.find((c) => String(c.id) === String(connectionId))
 
   return (
-    <div className="chat-layout">
+    <div className={`chat-layout${connectionId && connectionId !== 'new' ? ' has-active' : ''}`}>
       <div className="chat-sidebar">
         <h3 className="mb-16" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span>💬</span> Conversations
@@ -106,6 +106,9 @@ export default function Chat() {
               background: 'rgba(99, 102, 241, 0.03)',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button type="button" className="chat-back" aria-label="Back to conversations" onClick={() => navigate('/connections')}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+                </button>
                 <strong style={{ fontSize: '1rem' }}>{active?.peer_name || 'Chat'}</strong>
                 {online.has(active?.peer_id) && (
                   <div className="live-indicator">

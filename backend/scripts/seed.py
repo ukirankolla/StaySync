@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.config import settings  # noqa: E402
+from app.config import DEFAULT_ADMIN_PASSWORD, settings  # noqa: E402
 from app.database import Base, SessionLocal, engine  # noqa: E402
 from app.models import Listing, Profile, Questionnaire, User  # noqa: E402
 from app.security import hash_password  # noqa: E402
@@ -350,11 +350,19 @@ def seed():
     try:
         existing_admin = db.query(User).filter(User.email == settings.admin_email).first()
         if not existing_admin:
-            admin = User(email=settings.admin_email,
-                         hashed_password=hash_password(settings.admin_password), role="admin")
-            db.add(admin)
-            db.commit()
-            print("Seeded admin account.")
+            if settings.is_production and (settings.admin_password == DEFAULT_ADMIN_PASSWORD
+                                           or len(settings.admin_password) < 10):
+                print("ADMIN_PASSWORD is not set to a strong value (10+ characters): admin account NOT created.")
+            else:
+                admin = User(email=settings.admin_email,
+                             hashed_password=hash_password(settings.admin_password), role="admin")
+                db.add(admin)
+                db.commit()
+                print("Seeded admin account.")
+
+        if settings.is_production:
+            print("Production: demo users and demo listings are never seeded.")
+            return
 
         existing_count = db.query(User).filter(User.email != settings.admin_email).count()
         if existing_count < len(DEMO_USERS):

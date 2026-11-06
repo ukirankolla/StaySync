@@ -1,7 +1,8 @@
 import React from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Navbar from './components/Navbar'
+import BottomNav from './components/BottomNav'
 import MessageToasts from './components/MessageToasts'
 import InstallApp from './components/InstallApp'
 import AiAssistant from './components/AiAssistant'
@@ -36,10 +37,14 @@ function AdminRoute({ children }) {
 
 export default function App() {
   const { user } = useAuth()
+  const { pathname } = useLocation()
+  // Open conversation = full-screen chat on phones (no tab bar), like a native messenger.
+  const inConversation = /^\/chat\/(?!new$)[^/]+$/.test(pathname)
+  const showTabs = !!user && !inConversation
   return (
-    <div className="app">
+    <div className={`app${showTabs ? ' has-tabs' : ''}${inConversation ? ' in-chat' : ''}`}>
       <Navbar />
-      <main className="container">
+      <main className="container" key={pathname}>
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={user ? <Navigate to="/discover" replace /> : <Login />} />
@@ -57,6 +62,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      {showTabs && <BottomNav />}
       <MessageToasts />
       <InstallApp />
       <AiAssistant />

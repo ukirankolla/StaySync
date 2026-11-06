@@ -32,3 +32,11 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Mobile app signing material: never commit
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+key.properties
+frontend/.env.production
