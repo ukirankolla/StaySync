@@ -29,14 +29,21 @@ def _looks_like(content_type: str, data: bytes) -> bool:
 
 
 async def _upload_to_supabase(filename: str, data: bytes, content_type: str):
+    if not settings.supabase_url or not settings.supabase_service_key.strip():
+        print("[StaySync] Photo upload unavailable: SUPABASE_URL / SUPABASE_SERVICE_KEY not set")
+        raise HTTPException(status_code=503, detail="Photo uploads are temporarily unavailable.")
     bucket = settings.supabase_storage_bucket
     url = f"{settings.supabase_url.rstrip('/')}/storage/v1/object/{bucket}/{filename}"
     headers = {
         "Authorization": f"Bearer {settings.supabase_service_key}",
         "Content-Type": content_type,
     }
-    async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.put(url, content=data, headers=headers)
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.put(url, content=data, headers=headers)
+    except httpx.HTTPError as exc:
+        print(f"[StaySync] Supabase Storage request failed: {exc.__class__.__name__}")
+        raise HTTPException(status_code=502, detail="Photo storage is unreachable. Please try again.")
     if resp.status_code not in (200, 201):
         raise HTTPException(status_code=502, detail=f"Supabase Storage upload failed ({resp.status_code})")
 
