@@ -47,9 +47,14 @@ class Settings(BaseSettings):
     supabase_service_key: str = ""
     supabase_storage_bucket: str = "staysync"
 
+    # Origins used by the Android / iOS app shells (Capacitor). Always allowed, so setting
+    # CORS_ORIGINS in production can never lock the store apps out.
+    native_app_origins: tuple[str, ...] = ("https://localhost", "capacitor://localhost", "http://localhost")
+
     @property
     def cors_origin_list(self) -> list[str]:
-        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        origins = [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        return origins + [o for o in self.native_app_origins if o not in origins]
 
     @property
     def sender_name(self) -> str:

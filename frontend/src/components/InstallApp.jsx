@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { isNative } from '../lib/native'
 
 const isStandalone = () =>
   window.matchMedia('(display-mode: standalone)').matches ||
@@ -38,7 +39,7 @@ export default function InstallApp() {
     setShow(false)
   }
 
-  if (!show || dismissed || isStandalone()) return null
+  if (isNative || !show || dismissed || isStandalone()) return null
 
   return (
     <div className="install-bar">

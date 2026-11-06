@@ -14,6 +14,10 @@ class RegisterRequest(BaseModel):
     full_name: str = Field(min_length=1, max_length=120)
 
 
+class DeleteAccountRequest(BaseModel):
+    confirm: str  # must be the word DELETE
+
+
 class LoginRequest(BaseModel):
     email: EmailStr | None = None
     phone: str | None = None
