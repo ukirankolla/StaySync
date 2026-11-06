@@ -1,0 +1,35 @@
+# Render Blueprint: New > Blueprint > pick this repo. Fill in the variables marked "sync: false".
+services:
+  - type: web
+    name: staysync-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true          # Render creates a strong random secret for you
+      - key: DATABASE_URL            # Supabase "Session pooler" connection string
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD          # 10+ characters, not a default
+        sync: false
+      - key: STORAGE_BACKEND         # Render's disk is wiped on restart, so photos live in Supabase
+        value: supabase
+      - key: SUPABASE_URL
+        value: https://hfqsuftubxjwylwyxnud.supabase.co
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: staysync
+      - key: PUBLIC_BASE_URL         # e.g. https://staysync-api.onrender.com
+        sync: false
+      - key: CORS_ORIGINS            # your website origin(s), comma separated
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.12"

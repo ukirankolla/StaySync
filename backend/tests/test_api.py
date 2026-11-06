@@ -2,7 +2,7 @@ LISTING = {"title": "Sunny room in Indiranagar", "city": "Bangalore", "rent": 12
 
 
 def test_health(client):
-    assert client.get("/api/health").status_code in (200, 404)
+    assert client.get("/api/health").json() == {"status": "ok"}
 
 
 def test_register_login_and_weak_password(client, make_user):

@@ -185,6 +185,14 @@ Three pieces: **Supabase** (Postgres + storage), **Railway** (API, needs a persi
 3. Add a custom domain and submit the sitemap in Google Search Console.
 </details>
 
+### Render (free alternative to Railway)
+
+`render.yaml` is a Blueprint for the backend. In Render choose **New → Blueprint**, select this repo, then fill in
+`DATABASE_URL` (Supabase *Session pooler* string), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `SUPABASE_SERVICE_KEY`,
+`PUBLIC_BASE_URL` (the service's own URL) and `CORS_ORIGINS` (your Vercel domain). `JWT_SECRET` is generated for you.
+Free services sleep after 15 minutes idle (about a minute to wake); point an uptime monitor at `/api/health` to reduce that.
+Then set `VITE_API_URL` on Vercel to the Render URL and redeploy the frontend.
+
 ## Mobile apps (Android & iOS)
 
 The store apps are the same frontend, wrapped with Capacitor:
