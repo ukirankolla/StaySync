@@ -264,6 +264,41 @@ class ListingOut(BaseModel):
     is_active: bool
     status: str
     created_at: datetime
+    owner_name: str | None = None
+    residents: list["ResidentOut"] = []
+
+
+class ResidentOut(BaseModel):
+    """A current resident of a listing, shown to people browsing it."""
+    id: int  # listing_resident row id
+    user_id: int
+    status: str  # pending | accepted (pending only shown to the poster)
+    full_name: str
+    age: int | None = None
+    occupation: str | None = None
+    occupation_detail: str | None = None
+    bio: str | None = None
+    photos: list[str] = []
+    is_verified: bool = False
+    score: float | None = None  # compatibility with the viewer, if both have a questionnaire
+    reasons: list[str] = []
+    is_you: bool = False
+
+
+class ResidentAdd(BaseModel):
+    identifier: str = Field(min_length=3, max_length=255)  # email or phone of a registered user
+
+
+class ResidentInvitation(BaseModel):
+    id: int
+    listing_id: int
+    listing_title: str
+    city: str
+    area: str | None = None
+    invited_by: str | None = None
+
+
+ListingOut.model_rebuild()
 
 
 class ReportCreate(BaseModel):

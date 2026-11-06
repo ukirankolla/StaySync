@@ -118,6 +118,7 @@ Both values are overridable via the `ADMIN_EMAIL` / `ADMIN_PASSWORD` env vars.
 | Connect/request flow (pending → accept/decline) | ✅ |
 | Groups — create roommate group, invite matched users | ✅ |
 | Flat listings — search + post (approval flow) | ✅ |
+| Listing residents — poster adds flatmates who already live there (they confirm); seekers see them with a compatibility score and can chat | ✅ |
 | Report/block + moderation agent severity scoring | ✅ |
 | Admin dashboard — users, reports, listings, analytics | ✅ |
 

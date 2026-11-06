@@ -11,6 +11,7 @@ from sqlalchemy import (
     String,
     Table,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -137,6 +138,19 @@ class Listing(Base):
     status: Mapped[str] = mapped_column(String(16), default="pending")  # pending | approved | rejected
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+
+
+class ListingResident(Base):
+    """A person who already lives in the listed room/flat (added by the poster, confirmed by them)."""
+    __tablename__ = "listing_residents"
+    __table_args__ = (UniqueConstraint("listing_id", "user_id", name="uq_listing_resident"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    listing_id: Mapped[int] = mapped_column(ForeignKey("listings.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending | accepted | declined
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    responded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class Message(Base):
