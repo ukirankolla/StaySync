@@ -72,3 +72,18 @@ def test_recommendations_hide_score_without_questionnaire(client, make_user):
     r = client.get("/api/matching/recommendations?city=Nowhereville", headers=u["headers"])
     assert r.status_code == 200
     assert all(m["score"] is None for m in r.json())
+
+
+def test_bulk_import(client, make_user):
+    u = make_user()
+    csv_text = ("title,city,rent,amenities\n"
+                "Cozy room,Ongole,4500,WiFi;Geyser\n"
+                "x,Ongole,4500,\n"            # title too short
+                "Big flat,Guntur,abc,\n")      # bad rent
+    r = client.post("/api/listings/import", json={"csv": csv_text}, headers=u["headers"])
+    assert r.status_code == 200
+    body = r.json()
+    assert body["created"] == 1 and len(body["errors"]) == 2
+    mine = client.get("/api/listings/mine", headers=u["headers"]).json()
+    assert any(l["title"] == "Cozy room" for l in mine)
+    assert client.post("/api/listings/import", json={"csv": "foo,bar\n1,2"}, headers=u["headers"]).status_code == 400

@@ -27,6 +27,7 @@ export default function Listings() {
   const [invites, setInvites] = useState([])
   const [residentInput, setResidentInput] = useState({})
   const [contactingResident, setContactingResident] = useState(null)
+  const [importing, setImporting] = useState(false)
 
   const load = () => {
     api(`/listings${filters.city ? `?city=${encodeURIComponent(filters.city)}` : ''}${filters.maxRent ? `${filters.city ? '&' : '?'}max_rent=${filters.maxRent}` : ''}`)
@@ -72,6 +73,25 @@ export default function Listings() {
       await api(`/listings/${l.id}/residents/${userId}`, { method: 'DELETE' })
       refreshAll()
     } catch (e) { setErr(e.message) }
+  }
+
+  const TEMPLATE = 'title,city,area,address,rent,deposit,room_type,bhk,amenities,photos,description,available_from,looking_for\n' +
+    '"Sunny room near metro",Ongole,Church Center,"12-3 Main Road",4500,9000,private,2BHK,WiFi;Geyser;Parking,,"Furnished room, veg preferred",2026-12-01,1\n'
+  const downloadTemplate = () => {
+    const url = URL.createObjectURL(new Blob([TEMPLATE], { type: 'text/csv' }))
+    const a = document.createElement('a'); a.href = url; a.download = 'staysync-listings-template.csv'; a.click()
+    URL.revokeObjectURL(url)
+  }
+  const importCsv = async (e) => {
+    const file = e.target.files?.[0]; e.target.value = ''
+    if (!file) return
+    setImporting(true); setErr(''); setNotice('')
+    try {
+      const res = await api('/listings/import', { method: 'POST', body: { csv: await file.text() } })
+      const bad = res.errors?.length ? ` ${res.errors.length} row(s) skipped: ` + res.errors.slice(0, 3).map((x) => `line ${x.row} (${x.error})`).join('; ') : ''
+      flash(`Imported ${res.created} listing(s)${res.status === 'pending' ? ' - they will appear once approved' : ''}.${bad}`)
+      load(); loadMine()
+    } catch (e2) { setErr(e2.message) } finally { setImporting(false) }
   }
 
   const contactResident = async (l, r) => {
@@ -213,9 +233,16 @@ export default function Listings() {
           <h2 style={{ marginBottom: 4 }}>Flats & rooms</h2>
           <div className="live-indicator"><span className="live-dot" /> Chat with owners &amp; residents</div>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={() => setShowForm((s) => !s)}>
-          {showForm ? 'Close' : '+ Post a listing'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button className="btn btn-ghost btn-sm" onClick={downloadTemplate}>CSV template</button>
+          <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }}>
+            {importing ? 'Importing...' : 'Import CSV'}
+            <input type="file" accept=".csv,text/csv" onChange={importCsv} hidden disabled={importing} />
+          </label>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowForm((s) => !s)}>
+            {showForm ? 'Close' : '+ Post a listing'}
+          </button>
+        </div>
       </div>
 
       {notice && <div className="alert alert-success mt-16">{notice}</div>}

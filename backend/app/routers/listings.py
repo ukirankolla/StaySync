@@ -1,6 +1,9 @@
+import csv
+import io
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
@@ -17,6 +20,7 @@ from ..schemas import (
 )
 from ..services.chat_manager import chat_manager
 from ..services.events import track
+from ..services import ratelimit
 from ..services.matching import compute_compatibility
 
 router = APIRouter(prefix="/listings", tags=["listings"])
@@ -139,6 +143,67 @@ def create_listing(payload: ListingCreate, user: User = Depends(get_current_user
     db.refresh(listing)
     track(db, user.id, "listing_created", {"listing_id": listing.id})
     return _serialize(listing, user, db)
+
+
+MAX_IMPORT_ROWS = 200
+IMPORT_COLUMNS = ["title", "city", "area", "address", "rent", "deposit", "room_type", "bhk",
+                  "amenities", "photos", "description", "available_from", "looking_for"]
+
+
+class ListingImport(BaseModel):
+    csv: str = Field(min_length=1, max_length=1_000_000)
+
+
+def _split(value: str | None) -> list[str]:
+    return [x.strip() for x in (value or "").replace("|", ";").split(";") if x.strip()]
+
+
+def _num(value: str | None):
+    v = (value or "").replace(",", "").replace("₹", "").strip()
+    return int(float(v)) if v else None
+
+
+@router.post("/import")
+def import_listings(payload: ListingImport, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Bulk-create listings from CSV text. Header row required; see IMPORT_COLUMNS.
+
+    Rows are validated one by one; valid rows are saved, invalid rows are reported with their line number.
+    Admin imports are published immediately, everyone else's wait for approval like normal listings.
+    """
+    ratelimit.hit(f"import:{user.id}", 10, 3600, "Too many imports. Please try again later.")
+    reader = csv.DictReader(io.StringIO(payload.csv.lstrip("\ufeff")))
+    if not reader.fieldnames or "title" not in [h.strip().lower() for h in reader.fieldnames]:
+        raise HTTPException(status_code=400, detail="CSV needs a header row with at least: title, city, rent")
+
+    created, errors, seen = 0, [], 0
+    status = "approved" if user.role == "admin" else "pending"
+    for line_no, raw in enumerate(reader, start=2):
+        row = {(k or "").strip().lower(): (v or "").strip() for k, v in raw.items() if k}
+        if not any(row.values()):
+            continue
+        seen += 1
+        if seen > MAX_IMPORT_ROWS:
+            errors.append({"row": line_no, "error": f"Only the first {MAX_IMPORT_ROWS} rows are imported"})
+            break
+        try:
+            data = ListingCreate(
+                title=row.get("title", ""), city=row.get("city", ""), rent=_num(row.get("rent")) or 0,
+                area=row.get("area") or None, address=row.get("address") or None,
+                deposit=_num(row.get("deposit")), room_type=row.get("room_type") or "private",
+                bhk=row.get("bhk") or None, amenities=_split(row.get("amenities")),
+                photos=_split(row.get("photos")), description=row.get("description") or None,
+                available_from=row.get("available_from") or None, looking_for=_num(row.get("looking_for")),
+            )
+        except (ValidationError, ValueError) as exc:
+            msg = exc.errors()[0]["msg"] if isinstance(exc, ValidationError) else "Invalid number"
+            loc = ".".join(str(x) for x in exc.errors()[0]["loc"]) if isinstance(exc, ValidationError) else ""
+            errors.append({"row": line_no, "error": f"{loc}: {msg}" if loc else msg})
+            continue
+        db.add(Listing(owner_id=user.id, status=status, **data.model_dump()))
+        created += 1
+    db.commit()
+    track(db, user.id, "listings_imported", {"created": created, "errors": len(errors)})
+    return {"created": created, "status": status, "errors": errors[:50]}
 
 
 @router.get("/mine", response_model=list[ListingOut])
