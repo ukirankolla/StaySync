@@ -65,3 +65,10 @@ def test_delete_account(client, make_user):
     r = client.request("DELETE", "/api/auth/me", json={"confirm": "DELETE"}, headers=u["headers"])
     assert r.status_code == 200
     assert client.post("/api/auth/login", json={"email": u["email"], "password": "password123"}).status_code in (401, 403)
+
+
+def test_recommendations_hide_score_without_questionnaire(client, make_user):
+    u = make_user()
+    r = client.get("/api/matching/recommendations?city=Nowhereville", headers=u["headers"])
+    assert r.status_code == 200
+    assert all(m["score"] is None for m in r.json())

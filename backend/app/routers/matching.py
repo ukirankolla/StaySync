@@ -48,6 +48,10 @@ def _to_match_result(peer: User, qa: Questionnaire | None, qb: Questionnaire | N
     )
     ml = ml_predict(qa.answers if qa else {}, qb.answers if qb else {},
                     pa.__dict__ if pa else {}, pb.__dict__ if pb else {})
+    # No questionnaire yet means no real score: show nothing rather than a misleading 0%.
+    if not (qa and qa.answers):
+        result = {**result, "score": None}
+        ml = None
     return MatchResult(
         user_id=peer.id,
         full_name=pb.full_name if pb else "User",
@@ -132,13 +136,13 @@ def recommendations(user: User = Depends(get_current_user), db: Session = Depend
         if nearby:
             nearby_cities_list, state = nearby
             fb_filter = or_(*(Profile.city.ilike(f"%{c}%") for c in nearby_cities_list))
-            note = f"No matches in “{term.title()}” yet — showing matches from {state} (nearby)"
+            note = f"No members in “{term.title()}” yet. Showing real members from nearby cities in {state}."
             results = _run_recommendations(user, db, mine_q, profile, blocked, connected,
                                            loc_filter=fb_filter, max_budget=max_budget,
                                             is_fallback=True,
                                             fallback_note=note)
         if not results:
-            note = f"No matches in “{term.title()}” yet — showing matches from other cities"
+            note = f"No members in “{term.title()}” yet. Showing members from other cities."
             results = _run_recommendations(user, db, mine_q, profile, blocked, connected,
                                            loc_filter=None, max_budget=max_budget,
                                            is_fallback=True,
