@@ -85,6 +85,12 @@ if settings.storage_backend == "local":
     app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
+@app.get(f"{settings.api_prefix}/health")
+def health():
+    """Liveness probe for hosts and uptime monitors."""
+    return {"status": "ok"}
+
+
 @app.get("/")
 def root():
     return {"app": "StaySync", "docs": "/docs", "api": settings.api_prefix}
