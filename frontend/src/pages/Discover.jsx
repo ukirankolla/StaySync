@@ -113,15 +113,16 @@ export default function Discover() {
       {fallback && <div className="alert mb-16">{fallback.fallback_note}</div>}
       {needQuestionnaire && (
         <div className="alert alert-info mb-16">
-          These scores are estimates — complete your{' '}
-          <Link to="/questionnaire">lifestyle questionnaire</Link> to unlock accurate AI match scores.
+          Complete your{' '}
+          <Link to="/questionnaire">lifestyle questionnaire</Link> to see compatibility scores for each person.
         </div>
       )}
 
       {sorted.length === 0 ? (
         <div className="empty">
           <div style={{ fontSize: '3rem', marginBottom: 16 }}>🔍</div>
-          <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: 8 }}>No matches yet</div>
+          <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: 8 }}>No members found here yet</div>
+          <p>StaySync only shows real members. Try a nearby city, or invite friends to join.</p>
           {matches.length === 0 && (
             <p>Complete your profile and lifestyle questionnaire to unlock AI recommendations.</p>
           )}
