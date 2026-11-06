@@ -17,7 +17,7 @@ export default function Navbar() {
         <span className="brand-icon">🏠</span>
         StaySync
       </Link>
-      <div className="nav-links">
+      <div className={`nav-links${user ? ' nav-links-auth' : ''}`}>
         {user ? (
           <>
             <NavLink to="/discover" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Discover</NavLink>

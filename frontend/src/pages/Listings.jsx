@@ -159,35 +159,37 @@ export default function Listings() {
     if (list.length === 0 && !canManage) return null
     return (
       <div className="mt-8">
-        <div className="muted" style={{ fontSize: '.82rem', marginBottom: 6 }}>
+        <div className="section-label">
           {list.length > 0 ? 'People living here' : 'No residents listed yet'}
         </div>
         {list.map((r) => (
-          <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', flexWrap: 'wrap' }}>
-            <Avatar name={r.full_name} photo={r.photos?.[0]} size={36} />
-            <div style={{ flex: 1, minWidth: 120 }}>
-              <div style={{ fontWeight: 600 }}>
+          <div key={r.id} className="resident-row">
+            <Avatar name={r.full_name} photo={r.photos?.[0]} size={40} style={{ flexShrink: 0 }} />
+            <div className="resident-info">
+              <div className="resident-name">
                 {r.full_name}{r.is_you ? ' (you)' : ''}
-                {r.is_verified && <span className="chip chip-green" style={{ marginLeft: 6 }}>verified</span>}
-                {r.status === 'pending' && <span className="status-pill status-pending" style={{ marginLeft: 6 }}>awaiting confirmation</span>}
+                {r.is_verified && <span className="chip chip-green">verified</span>}
+                {r.status === 'pending' && <span className="status-pill status-pending">awaiting confirmation</span>}
               </div>
               <div className="muted" style={{ fontSize: '.8rem' }}>
                 {[r.age && `${r.age} yrs`, r.occupation_detail || r.occupation].filter(Boolean).join(' · ')}
               </div>
               {r.reasons?.length > 0 && <div className="muted" style={{ fontSize: '.78rem' }}>{r.reasons[0]}</div>}
             </div>
-            {r.score != null && <span className="chip chip-green">{Math.round(r.score)}% match</span>}
-            <button className="btn btn-ghost btn-sm" onClick={() => setViewOwner(r.user_id)}>Profile</button>
-            {!r.is_you && r.status === 'accepted' && l.owner_id !== user.id && (
-              <button className="btn btn-primary btn-sm" disabled={contactingResident === r.user_id} onClick={() => contactResident(l, r)}>
-                {contactingResident === r.user_id ? 'Sending…' : '💬 Chat'}
-              </button>
-            )}
-            {(canManage || r.is_you) && (
-              <button className="btn btn-ghost btn-sm" onClick={() => removeResident(l, r.user_id, r.is_you)}>
-                {r.is_you ? 'Leave' : 'Remove'}
-              </button>
-            )}
+            {r.score != null && <span className="chip chip-green" style={{ flexShrink: 0 }}>{Math.round(r.score)}% match</span>}
+            <div className="resident-actions">
+              <button className="btn btn-ghost btn-sm" onClick={() => setViewOwner(r.user_id)}>Profile</button>
+              {!r.is_you && r.status === 'accepted' && l.owner_id !== user.id && (
+                <button className="btn btn-primary btn-sm" disabled={contactingResident === r.user_id} onClick={() => contactResident(l, r)}>
+                  {contactingResident === r.user_id ? 'Sending…' : '💬 Chat'}
+                </button>
+              )}
+              {(canManage || r.is_you) && (
+                <button className="btn btn-ghost btn-sm" onClick={() => removeResident(l, r.user_id, r.is_you)}>
+                  {r.is_you ? 'Leave' : 'Remove'}
+                </button>
+              )}
+            </div>
           </div>
         ))}
         {canManage && (
@@ -207,7 +209,7 @@ export default function Listings() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h2 style={{ marginBottom: 4 }}>Flats & rooms</h2>
-          <div className="live-indicator"><span className="live-dot" /> AI-generated previews</div>
+          <div className="live-indicator"><span className="live-dot" /> Chat with owners &amp; residents</div>
         </div>
         <button className="btn btn-primary btn-sm" onClick={() => setShowForm((s) => !s)}>
           {showForm ? 'Close' : '+ Post a listing'}
@@ -235,7 +237,7 @@ export default function Listings() {
         </div>
       )}
 
-      <div className="card mt-16 mb-16" style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'end' }}>
+      <div className="card mt-16 mb-16 filter-bar">
         <div className="field">
           <label>City</label>
           <input className="input" value={filters.city} onChange={(e) => setFilters({ ...filters, city: e.target.value })}
@@ -332,12 +334,12 @@ export default function Listings() {
                 </div>
               )}
               <div className="mt-8" style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
-                {l.amenities.map((a) => <span key={a} className="chip chip-gray">{a}</span>)}
+                {l.amenities.map((a) => <span key={a} className="chip chip-gray">{String(a).replace(/_/g, ' ')}</span>)}
               </div>
               {l.available_from && <p className="muted mt-8" style={{ fontSize: '.82rem' }}>Available from {l.available_from}</p>}
               {l.owner_name && <p className="muted mt-8" style={{ fontSize: '.82rem' }}>Posted by {l.owner_name}</p>}
               {renderResidents(l, false)}
-              <div className="mt-8" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div className="mt-8 listing-actions">
                 {l.owner_id !== user.id && (
                   <>
                     <button className="btn btn-primary btn-sm" disabled={contacting === l.id} onClick={() => contact(l)}>

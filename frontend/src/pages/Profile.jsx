@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 
@@ -14,7 +14,7 @@ const PRIVACY_FIELDS = [
 ]
 
 export default function Profile() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [form, setForm] = useState({
     full_name: '', age: '', occupation: 'student', occupation_detail: '',
@@ -266,6 +266,12 @@ export default function Profile() {
         </div>
         <button className="btn btn-sm">Update password</button>
       </form>
+
+      {/* Phones have no top nav links: account actions live here */}
+      <div className="card mt-16 mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {user?.role === 'admin' && <Link to="/admin" className="btn btn-ghost btn-block">Admin dashboard</Link>}
+        <button type="button" className="btn btn-ghost btn-block" onClick={() => { logout(); navigate('/') }}>Log out</button>
+      </div>
     </div>
   )
 }
