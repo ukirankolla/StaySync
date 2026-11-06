@@ -35,6 +35,8 @@ async def _upload_to_supabase(filename: str, data: bytes, content_type: str):
     bucket = settings.supabase_storage_bucket
     url = f"{settings.supabase_url.rstrip('/')}/storage/v1/object/{bucket}/{filename}"
     headers = {
+        # Works with both the legacy service_role JWT and the newer sb_secret_ keys.
+        "apikey": settings.supabase_service_key,
         "Authorization": f"Bearer {settings.supabase_service_key}",
         "Content-Type": content_type,
     }
