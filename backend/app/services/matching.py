@@ -134,45 +134,69 @@ def compute_compatibility(
     }
 
 
+def _lower_first(text: str) -> str:
+    return text[:1].lower() + text[1:]
+
+
+def _when(option: str) -> str:
+    """'10 PM – 11 PM' -> 'between 10 PM and 11 PM'; 'Before 6 AM' -> 'before 6 AM'."""
+    if "–" in option:
+        lo, hi = [x.strip() for x in option.split("–", 1)]
+        return f"between {lo} and {hi}"
+    return _lower_first(option)
+
+
 def generate_reasons(qa, qb, category_scores, sub, pa, pb) -> list[str]:
     reasons: list[str] = []
 
-    for key in ("cleanliness", "sleep_time", "wake_time", "quiet_after"):
-        a, b = qa.get(key), qb.get(key)
-        if a is None or b is None or a == "" or b == "":
-            continue
-        if str(a).lower() == str(b).lower() and a not in (None, ""):
-            reasons.append(MATCH_REASON_TEMPLATES[key].format(**{key: a}))
+    ca, cb = qa.get("cleanliness"), qb.get("cleanliness")
+    if ca not in (None, "") and cb not in (None, ""):
+        try:
+            if abs(int(ca) - int(cb)) <= 1:
+                reasons.append("Similar cleanliness standards for shared spaces")
+        except (TypeError, ValueError):
+            pass
 
-    for key in ("smoking", "drinking", "food_pref"):
+    for key, verb in (("sleep_time", "usually go to bed"), ("wake_time", "usually wake up")):
         a, b = qa.get(key), qb.get(key)
-        if a is None or b is None:
+        if a and b and str(a) == str(b):
+            reasons.append(f"Both {verb} {_when(str(a))}")
+
+    a, b = qa.get("quiet_after"), qb.get("quiet_after")
+    if a and b and a == b and a != "No preference":
+        reasons.append(f"Both prefer {_lower_first(str(a))}")
+
+    for key in ("smoking", "drinking"):
+        a, b = qa.get(key), qb.get(key)
+        if not a or not b or str(a).lower() != str(b).lower():
             continue
-        if str(a).lower() == str(b).lower():
-            mapped = {"Never": "never smoke", "Sometimes": "only sometimes", "Regular": "smoke",
-                      "Occasionally": "drink occasionally", "Never2": ""}
-            if key == "smoking":
-                text = "don't smoke" if a == "Never" else ("smoke sometimes" if a == "Sometimes" else "smoke")
-            elif key == "drinking":
-                text = "don't drink" if a == "Never" else ("drink occasionally" if a == "Occasionally" else "drink regularly")
-            else:
-                text = str(a)
-            reasons.append(MATCH_REASON_TEMPLATES[key].format(**{f"{key}_s": text}) if key in (
-                "smoking", "drinking") else f"Both prefer {text}")
+        if key == "smoking":
+            text = "don't smoke" if a == "Never" else ("smoke sometimes" if a == "Sometimes" else "smoke")
+        else:
+            text = "don't drink" if a == "Never" else ("drink occasionally" if a == "Occasionally" else "drink regularly")
+        reasons.append(f"Both {text}")
+
+    a, b = qa.get("food_pref"), qb.get("food_pref")
+    if a and b and a == b and a != "No preference":
+        reasons.append(f"Both are {str(a).lower()}")
 
     if qa.get("pets") == qb.get("pets") and qa.get("pets"):
         reasons.append("You agree on pets")
 
     if sub.get("budget") is not None and sub["budget"] >= 75:
         reasons.append(MATCH_REASON_TEMPLATES["budget"])
-    if sub.get("area") is not None and sub["area"] >= 70:
-        area_label = pb.get("preferred_area") or pa.get("preferred_area") or "the same area"
+    area_label = pb.get("preferred_area") or pa.get("preferred_area")
+    if area_label and sub.get("area") is not None and sub["area"] >= 70:
         reasons.append(MATCH_REASON_TEMPLATES["area"].format(area=area_label))
 
-    for key, score in category_scores.items():
-        if score is not None and score >= 80 and key in ("routine", "social", "cleanliness", "sleep_noise"):
-            tmpl = MATCH_REASON_TEMPLATES.get(key)
-            if tmpl:
-                reasons.append(tmpl)
+    category_reasons = {
+        "routine": "Similar study/work routines",
+        "social": "Similar level of socialising at home",
+        "sleep_noise": "Compatible sleep and noise habits",
+    }
+    for key, text in category_reasons.items():
+        score = category_scores.get(key)
+        if score is not None and score >= 80:
+            reasons.append(text)
 
     return list(dict.fromkeys(reasons))

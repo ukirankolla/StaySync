@@ -195,3 +195,16 @@ def test_demo_profiles_are_flagged(client, make_user):
     assert any(r["user_id"] == did and r["is_demo"] for r in recs)
     assert client.get(f"/api/profile/{did}", headers=me["headers"]).json()["is_demo"] is True
     assert client.get(f"/api/profile/{me['id']}", headers=me["headers"]).json().get("is_demo") in (False, None)
+
+
+def test_reason_wording_is_clean():
+    from app.services.matching import compute_compatibility
+    a = {"cleanliness": 4, "sleep_time": "10 PM – 11 PM", "wake_time": "Before 6 AM", "quiet_after": "No preference",
+         "food_pref": "No preference", "smoking": "Never", "drinking": "Never", "noise_tolerance": 2,
+         "guests": 2, "work_routine": 4, "social_pref": 3, "pets": "Open to pets"}
+    reasons = compute_compatibility(a, {**a, "cleanliness": 5}, {}, {})["reasons"]
+    text = " | ".join(reasons)
+    assert "{" not in text and "No preference" not in text and "a 4 shared" not in text
+    assert "Both usually go to bed between 10 PM and 11 PM" in reasons
+    assert "Both usually wake up before 6 AM" in reasons
+    assert "Similar cleanliness standards for shared spaces" in reasons
