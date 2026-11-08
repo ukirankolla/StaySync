@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect } from 'react'
 const SUGGESTIONS = [
   "How does compatibility scoring work?",
   "What makes a good roommate match?",
-  "How do I verify my profile?",
   "Tell me about StaySync's safety features",
   "How do roommate groups work?",
   "What cities is StaySync available in?",
@@ -11,7 +10,6 @@ const SUGGESTIONS = [
 
 const RESPONSES = {
   compatibility: "Our AI analyzes 12 lifestyle factors — sleep schedule, cleanliness, noise tolerance, budget, and more. Each match comes with transparent reasons so you know exactly why you're compatible.",
-  verify: "You can verify your profile via email OTP verification — it earns you a verified badge and boosts trust with potential roommates. Go to your Profile page and click 'Verify now'.",
   safety: "StaySync has 24/7 moderation, report/block tools, and transparent scoring. We review all reports with our AI moderation agent and take swift action against fake profiles.",
   groups: "Create a group, invite compatible roommates, set a shared budget and city preference, then browse flat listings together. It's the smart way to find a flat with people you actually get along with.",
   cities: "StaySync is currently live in 6 Indian cities with more coming soon. We're expanding based on demand — join up and let us know where you'd like us next!",
@@ -22,8 +20,6 @@ function getResponse(input) {
   const lower = input.toLowerCase()
   if (lower.includes('compat') || lower.includes('match') || lower.includes('score') || lower.includes('work'))
     return RESPONSES.compatibility
-  if (lower.includes('verif') || lower.includes('badge') || lower.includes('id'))
-    return RESPONSES.verify
   if (lower.includes('safe') || lower.includes('report') || lower.includes('block') || lower.includes('moder'))
     return RESPONSES.safety
   if (lower.includes('group') || lower.includes('team') || lower.includes('flat'))

@@ -191,7 +191,6 @@ export default function Listings() {
             <div className="resident-info">
               <div className="resident-name">
                 {r.full_name}{r.is_you ? ' (you)' : ''}
-                {r.is_verified && <span className="chip chip-green">verified</span>}
                 {r.status === 'pending' && <span className="status-pill status-pending">awaiting confirmation</span>}
               </div>
               <div className="muted" style={{ fontSize: '.8rem' }}>
@@ -355,7 +354,6 @@ export default function Listings() {
                 {l.area && <span className="chip chip-gray">{l.area}</span>}
                 <span className="chip chip-gray">{l.room_type.replace('_', ' ')}</span>
                 {l.bhk && <span className="chip chip-gray">{l.bhk}</span>}
-                {l.is_verified && <span className="chip chip-green">verified</span>}
                 {l.match_score != null && <span className="chip chip-green" title="Average compatibility with the people already living here">{Math.round(l.match_score)}% flat match</span>}
               </div>
               {l.description && <p className="muted mt-8" style={{ fontSize: '.88rem', lineHeight: 1.5 }}>{l.description}</p>}
