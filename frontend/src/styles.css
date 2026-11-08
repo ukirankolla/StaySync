@@ -946,3 +946,6 @@ body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
 
 /* ---------- Selection ---------- */
 ::selection { background: rgba(99, 102, 241, 0.3); color: #fff; }
+
+.page-logo { display: block; margin: 0 auto 12px; border-radius: 16px; box-shadow: 0 6px 24px rgba(59,130,230,.35); }
+.hero-inner .page-logo { margin: 0 0 16px; }

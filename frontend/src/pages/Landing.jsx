@@ -73,7 +73,8 @@ export default function Landing() {
         ))}
         <ParticleField count={20} />
         <div className="hero-inner">
-          <span className="hero-eyebrow">
+          <img src="/logo.png" alt="StaySync" className="page-logo" width="64" height="64" />
+                    <span className="hero-eyebrow">
             <span className="pulse-dot" />
             The roommate compatibility platform
           </span>
