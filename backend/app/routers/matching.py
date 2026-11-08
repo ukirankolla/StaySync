@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_user
-from ..models import Block, Connection, MatchMark, Profile, Questionnaire, User
+from ..models import Block, Connection, MatchMark, Profile, Questionnaire, RoommateReview, User
 from ..schemas import (
     ConnectRequest,
     ConnectionOut,
@@ -41,10 +41,14 @@ def _load_pair(user: User, peer_id: int, db: Session):
     return peer, qa, qb, pa, pb
 
 
+DEMO_CANDIDATE_CAP = 400
+MAX_RESULTS = 150
+
+
 def _to_match_result(peer: User, qa: Questionnaire | None, qb: Questionnaire | None,
                      pa: Profile | None, pb: Profile | None, *,
                      is_fallback: bool = False, fallback_note: str | None = None,
-                     db: Session | None = None) -> MatchResult:
+                     db: Session | None = None, summary: dict | None = None) -> MatchResult:
     result = compute_compatibility(
         qa.answers if qa else {}, qb.answers if qb else {},
         pa.__dict__ if pa else {}, pb.__dict__ if pb else {},
@@ -53,7 +57,8 @@ def _to_match_result(peer: User, qa: Questionnaire | None, qb: Questionnaire | N
     if not (qa and qa.answers):
         result = {**result, "score": None}
     hide_badges = bool(pb and (pb.privacy or {}).get("lifestyle") is False)
-    summary = review_summary(db, peer.id) if db is not None else {"count": 0, "average": None}
+    if summary is None:
+        summary = review_summary(db, peer.id) if db is not None else {"count": 0, "average": None}
     return MatchResult(
         user_id=peer.id,
         full_name=pb.full_name if pb else "User",
@@ -97,14 +102,27 @@ def _run_recommendations(user: User, db: Session, mine_q: Questionnaire | None,
     if max_budget:
         query = query.where(Profile.budget_min <= max_budget)
 
+    peers = [p for p in db.scalars(query).all() if p.id not in blocked and p.id not in connected]
+    # Thousands of demo profiles exist: keep every real member, sample the demo ones.
+    real = [p for p in peers if not is_demo_email(p.email)]
+    demo = [p for p in peers if is_demo_email(p.email)]
+    if len(demo) > DEMO_CANDIDATE_CAP:
+        step = len(demo) / DEMO_CANDIDATE_CAP
+        demo = [demo[int(i * step)] for i in range(DEMO_CANDIDATE_CAP)]
+    peers = real + demo
+    ids = [p.id for p in peers]
+    qmap = {q.user_id: q for q in db.query(Questionnaire).filter(Questionnaire.user_id.in_(ids)).all()} if ids else {}
+    pmap = {pr.user_id: pr for pr in db.query(Profile).filter(Profile.user_id.in_(ids)).all()} if ids else {}
+    rmap = {uid: {"count": c or 0, "average": round(float(a), 1) if a else None}
+            for uid, c, a in db.query(RoommateReview.reviewee_id, func.count(RoommateReview.id),
+                                      func.avg(RoommateReview.rating))
+            .filter(RoommateReview.reviewee_id.in_(ids)).group_by(RoommateReview.reviewee_id).all()} if ids else {}
+
     results: list[MatchResult] = []
-    for peer in db.scalars(query).all():
-        if peer.id in blocked or peer.id in connected:
-            continue
-        qb = db.query(Questionnaire).filter(Questionnaire.user_id == peer.id).first()
-        pb = db.query(Profile).filter(Profile.user_id == peer.id).first()
-        results.append(_to_match_result(peer, mine_q, qb, profile, pb,
-                                        is_fallback=is_fallback, fallback_note=fallback_note, db=db))
+    for peer in peers:
+        results.append(_to_match_result(peer, mine_q, qmap.get(peer.id), profile, pmap.get(peer.id),
+                                        is_fallback=is_fallback, fallback_note=fallback_note, db=db,
+                                        summary=rmap.get(peer.id, {"count": 0, "average": None})))
     return results
 
 
@@ -167,6 +185,7 @@ def recommendations(user: User = Depends(get_current_user), db: Session = Depend
         results = [r for r in results if not r.is_demo]
     # Real members always come first; the compatibility score orders within each group.
     results.sort(key=lambda r: (not r.is_demo, r.score if r.score is not None else -1), reverse=True)
+    results = results[:MAX_RESULTS]
     track(db, user.id, "recommendations_viewed",
           {"count": len(results), "fallback": bool(results and results[0].is_fallback),
            "area": area, "city": city})
