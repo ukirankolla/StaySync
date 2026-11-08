@@ -200,7 +200,9 @@ async def connect(payload: ConnectRequest, user: User = Depends(get_current_user
         qa.answers if qa else {}, qb.answers if qb else {},
         pa.__dict__ if pa else {}, pb.__dict__ if pb else {},
     )
-    conn = Connection(requester_id=user.id, recipient_id=payload.recipient_id, status="pending",
+    # Demo profiles have no login, so they "accept" automatically and answer with labelled sample replies.
+    conn = Connection(requester_id=user.id, recipient_id=payload.recipient_id,
+                      status="accepted" if is_demo_email(peer.email) else "pending",
                       score_at_connect=result["score"])
     db.add(conn)
     db.commit()

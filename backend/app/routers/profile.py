@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..deps import get_current_user
 from ..models import OtpCode, Profile, Questionnaire, User
-from ..questionnaire import QUESTIONNAIRE
+from ..questionnaire import QUESTIONNAIRE, normalize_answers
 from ..services.demo import is_demo_email
 from ..services.matching import lifestyle_badges
 from ..schemas import (
@@ -81,7 +81,7 @@ def get_questionnaire():
 @router.get("/questionnaire/answers", response_model=dict)
 def get_my_answers(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     q = db.query(Questionnaire).filter(Questionnaire.user_id == user.id).first()
-    return {"answers": q.answers if q else {}, "completed": bool(q and q.completed_at)}
+    return {"answers": normalize_answers(q.answers) if q else {}, "completed": bool(q and q.completed_at)}
 
 
 @router.put("/questionnaire", response_model=dict)

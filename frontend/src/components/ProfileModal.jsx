@@ -66,7 +66,7 @@ export default function ProfileModal({ userId, onClose, onConnected }) {
             <Avatar name={profile?.full_name} photo={profile?.photos?.[0]} size={56} />
             <div>
               <h3 style={{ margin: 0 }}>{profile?.full_name || 'Profile'}</h3>
-              {profile?.is_demo && <span className="chip chip-gray" style={{ fontSize: '.68rem' }}>Demo profile — example only, cannot reply</span>}
+              {profile?.is_demo && <span className="chip chip-gray" style={{ fontSize: '.68rem' }}>Demo profile — example only; replies are labelled samples</span>}
             </div>
           </div>
           <button className="modal-close" onClick={onClose}>×</button>

@@ -30,7 +30,7 @@ export default function Login() {
       : { phone: identifier, password }
     try {
       await login(body)
-      navigate('/discover')
+      navigate('/home')
     } catch (err) {
       setError(err.message)
       if (err.message.includes('OTP') || err.message.includes('no password')) {

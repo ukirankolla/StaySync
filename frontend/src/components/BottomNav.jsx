@@ -7,10 +7,12 @@ const Icon = ({ children }) => (
 )
 
 const TABS = [
+  { to: '/home', label: 'Home', match: ['/home'],
+    icon: <Icon><path d="M3 11.5 12 4l9 7.5" /><path d="M5 10v10h14V10" /></Icon> },
   { to: '/discover', label: 'Discover', match: ['/discover', '/questionnaire'],
     icon: <Icon><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></Icon> },
   { to: '/listings', label: 'Flats', match: ['/listings'],
-    icon: <Icon><path d="M3 11.5 12 4l9 7.5" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></Icon> },
+    icon: <Icon><rect x="5" y="3" width="14" height="18" rx="1.5" /><path d="M9 8h2M13 8h2M9 12h2M13 12h2M10 21v-4h4v4" /></Icon> },
   { to: '/connections', label: 'Chats', match: ['/connections', '/chat'],
     icon: <Icon><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.5-4.8A8 8 0 1 1 21 12Z" /></Icon> },
   { to: '/groups', label: 'Groups', match: ['/groups'],

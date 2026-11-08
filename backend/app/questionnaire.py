@@ -8,7 +8,7 @@ QUESTIONNAIRE = [
     {"key": "wake_time", "step": 1, "icon": "🌅", "label": "Wake-up time", "type": "choice",
      "options": ["Before 6 AM", "6 AM – 8 AM", "8 AM – 10 AM", "After 10 AM"]},
     {"key": "sleep_time", "step": 1, "icon": "🛏️", "label": "Sleep time", "type": "choice",
-     "options": ["Before 10 PM", "10 PM – 11 PM", "11 PM – 12 AM", "12 AM – 2 AM", "After 2 AM"]},
+     "options": ["Before 10 PM", "10 PM – 12 AM", "12 AM – 2 AM", "After 2 AM"]},
     {"key": "cleanliness", "step": 1, "icon": "✨", "label": "Cleanliness level", "type": "scale", "min": 1, "max": 5,
      "hints": ["Relaxed", "Spotless"], "labels": ["Relaxed", "Casual", "Moderate", "Very tidy", "Spotless"]},
     {"key": "personality", "step": 1, "icon": "🧑‍🤝‍🧑", "label": "Personality", "type": "choice",
@@ -143,3 +143,16 @@ MATCH_REASON_TEMPLATES = {
     "area": "Both are looking near {area}",
     "routine": "Both follow similar daily routines",
 }
+
+
+# Answers saved before the sleep buckets were aligned with the app's lifestyle screen.
+LEGACY_ANSWERS = {"sleep_time": {"10 PM – 11 PM": "10 PM – 12 AM", "11 PM – 12 AM": "10 PM – 12 AM"}}
+
+
+def normalize_answers(answers: dict | None) -> dict:
+    """Map old option labels to the current ones so earlier answers keep scoring and displaying."""
+    out = dict(answers or {})
+    for key, mapping in LEGACY_ANSWERS.items():
+        if out.get(key) in mapping:
+            out[key] = mapping[out[key]]
+    return out

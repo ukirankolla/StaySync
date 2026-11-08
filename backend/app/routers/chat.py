@@ -4,11 +4,12 @@ from sqlalchemy.orm import Session
 
 from ..database import SessionLocal, get_db
 from ..deps import get_current_user
-from ..models import Block, Connection, Message, User
+from ..models import Block, Connection, Message, Profile, User
 from ..schemas import MessageCreate, MessageOut
 from ..security import decode_token
 from ..services.chat_manager import chat_manager
 from ..services import ratelimit
+from ..services.demo import demo_reply, is_demo_email
 from ..services.events import track
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -63,6 +64,17 @@ async def send_message(connection_id: int, payload: MessageCreate, user: User = 
         "data": jsonable_encoder(MessageOut.model_validate(msg)),
     })
     track(db, user.id, "message_sent", {"connection_id": connection_id})
+
+    peer = db.get(User, peer_id)
+    if peer and is_demo_email(peer.email):
+        prof = db.query(Profile).filter(Profile.user_id == peer_id).first()
+        count = db.query(Message).filter(Message.connection_id == connection_id, Message.sender_id == peer_id).count()
+        reply = Message(connection_id=connection_id, sender_id=peer_id,
+                        content=demo_reply(prof.full_name if prof else "", payload.content, prof.city if prof else None, count))
+        db.add(reply)
+        db.commit()
+        db.refresh(reply)
+        await chat_manager.send_to_user(user.id, {"type": "message", "data": jsonable_encoder(MessageOut.model_validate(reply))})
     return msg
 
 

@@ -89,7 +89,7 @@ def test_bulk_import(client, make_user):
     assert client.post("/api/listings/import", json={"csv": "foo,bar\n1,2"}, headers=u["headers"]).status_code == 400
 
 
-ANS_A = {"cleanliness": 5, "sleep_time": "10 PM – 11 PM", "wake_time": "6 AM – 8 AM", "noise_tolerance": 2,
+ANS_A = {"cleanliness": 5, "sleep_time": "10 PM – 12 AM", "wake_time": "6 AM – 8 AM", "noise_tolerance": 2,
          "quiet_after": "Quiet after 10 PM", "smoking": "Never", "drinking": "Never", "food_pref": "Vegetarian",
          "guests": 2, "work_routine": 4, "social_pref": 2, "pets": "Open to pets"}
 ANS_B = {**ANS_A, "cleanliness": 4, "noise_tolerance": 3}
@@ -199,13 +199,13 @@ def test_demo_profiles_are_flagged(client, make_user):
 
 def test_reason_wording_is_clean():
     from app.services.matching import compute_compatibility
-    a = {"cleanliness": 4, "sleep_time": "10 PM – 11 PM", "wake_time": "Before 6 AM", "quiet_after": "No preference",
+    a = {"cleanliness": 4, "sleep_time": "10 PM – 12 AM", "wake_time": "Before 6 AM", "quiet_after": "No preference",
          "food_pref": "No preference", "smoking": "Never", "drinking": "Never", "noise_tolerance": 2,
          "guests": 2, "work_routine": 4, "social_pref": 3, "pets": "Open to pets"}
     reasons = compute_compatibility(a, {**a, "cleanliness": 5}, {}, {})["reasons"]
     text = " | ".join(reasons)
     assert "{" not in text and "No preference" not in text and "a 4 shared" not in text
-    assert "Both usually go to bed between 10 PM and 11 PM" in reasons
+    assert "Both usually go to bed between 10 PM and 12 AM" in reasons
     assert "Both usually wake up before 6 AM" in reasons
     assert "Similar cleanliness standards for shared spaces" in reasons
 
@@ -269,3 +269,21 @@ def test_group_rules_members_only_and_flat_match_score(client, make_user):
     assert client.post(f"/api/groups/{g['id']}/rules", json={"text": "Nope nope"}, headers=outsider["headers"]).status_code == 404
     rid = r.json()["rules"][0]["id"]
     assert client.delete(f"/api/groups/{g['id']}/rules/{rid}", headers=owner["headers"]).json()["rules"] == []
+
+
+def test_demo_profile_accepts_and_replies_with_label(client, make_user):
+    from app.database import SessionLocal
+    from app.models import User, Profile
+    me = make_user("Me")
+    db = SessionLocal()
+    demo = User(email="sample.person@example.com", hashed_password="x")
+    db.add(demo); db.flush()
+    db.add(Profile(user_id=demo.id, full_name="Sample Person", city="Hyderabad"))
+    db.commit(); did = demo.id; db.close()
+    c = client.post("/api/matching/connect", json={"recipient_id": did}, headers=me["headers"]).json()
+    assert c["status"] == "accepted"
+    client.post(f"/api/chat/connections/{c['id']}/messages", json={"content": "hi, what's your budget?"}, headers=me["headers"])
+    msgs = client.get(f"/api/chat/connections/{c['id']}/messages", headers=me["headers"]).json()
+    assert len(msgs) == 2 and msgs[1]["sender_id"] == did and msgs[1]["content"].startswith("Demo reply:")
+    r = client.post("/api/reviews", json={"connection_id": c["id"], "rating": 5, "would_live_again": True}, headers=me["headers"])
+    assert r.status_code == 400

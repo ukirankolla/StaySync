@@ -10,6 +10,8 @@ from ..models import Connection, Message, Profile, RoommateReview, User
 from ..services import ratelimit
 from ..services.events import track
 
+from ..services.demo import is_demo_email  # noqa: E402
+
 router = APIRouter(prefix="/reviews", tags=["reviews"])
 
 
@@ -33,6 +35,9 @@ def submit_review(payload: ReviewIn, user: User = Depends(get_current_user), db:
     if not conn or user.id not in (conn.requester_id, conn.recipient_id) or conn.status != "accepted":
         raise HTTPException(status_code=404, detail="Connection not found")
     other = conn.recipient_id if conn.requester_id == user.id else conn.requester_id
+    other_user = db.get(User, other)
+    if other_user and is_demo_email(other_user.email):
+        raise HTTPException(status_code=400, detail="Demo profiles are examples and can't be reviewed.")
     senders = {s for (s,) in db.query(Message.sender_id).filter(Message.connection_id == conn.id).distinct().all()}
     if not {user.id, other} <= senders:
         raise HTTPException(status_code=400, detail="You can review someone once you have both exchanged messages.")
