@@ -208,3 +208,64 @@ def test_reason_wording_is_clean():
     assert "Both usually go to bed between 10 PM and 11 PM" in reasons
     assert "Both usually wake up before 6 AM" in reasons
     assert "Similar cleanliness standards for shared spaces" in reasons
+
+
+FULL = {**ANS_A, "personality": "Introvert", "fitness": "Daily", "study_hours": "9–6 fixed"}
+
+
+def _connect_and_chat(client, a, b):
+    client.post("/api/matching/connect", json={"recipient_id": b["id"]}, headers=a["headers"])
+    cid = client.get("/api/matching/connections", headers=a["headers"]).json()[0]["id"]
+    client.post(f"/api/matching/connections/{cid}/respond?action=accept", headers=b["headers"])
+    return cid
+
+
+def test_new_lifestyle_questions_badges_and_strength(client, make_user):
+    me, peer = make_user("Me"), make_user("Peer")
+    qs = client.get("/api/profile/questionnaire").json()["questions"]
+    keys = {q["key"]: q for q in qs}
+    assert {"personality", "fitness", "study_hours"} <= set(keys) and keys["cleanliness"]["step"] == 1
+    _with_profile(client, me, FULL)
+    _with_profile(client, peer, FULL)
+    recs = client.get("/api/matching/recommendations?city=Hyderabad", headers=me["headers"]).json()
+    rec = next(r for r in recs if r["user_id"] == peer["id"])
+    assert "Gym regular" in rec["badges"] and "Both work out daily" in rec["reasons"]
+    client.put("/api/profile/me", json={"privacy": {"lifestyle": False}}, headers=peer["headers"])
+    assert client.get(f"/api/profile/{peer['id']}", headers=me["headers"]).json()["badges"] == []
+    s = client.get("/api/profile/me/strength", headers=me["headers"]).json()
+    assert s["percent"] >= 30 and any(m["key"] == "photo" for m in s["missing"])
+
+
+def test_save_skip_and_reviews(client, make_user):
+    a, b, c = make_user("A"), make_user("B"), make_user("C")
+    for u in (a, b, c):
+        _with_profile(client, u, FULL)
+    assert client.post("/api/matching/marks", json={"user_id": b["id"], "kind": "saved"}, headers=a["headers"]).status_code == 200
+    assert client.post("/api/matching/marks", json={"user_id": c["id"], "kind": "skipped"}, headers=a["headers"]).status_code == 200
+    recs = client.get("/api/matching/recommendations?city=Hyderabad", headers=a["headers"]).json()
+    ids = {r["user_id"]: r for r in recs}
+    assert c["id"] not in ids and ids[b["id"]]["is_saved"] is True
+    assert [r["user_id"] for r in client.get("/api/matching/saved", headers=a["headers"]).json()] == [b["id"]]
+
+    cid = _connect_and_chat(client, a, b)
+    body = {"connection_id": cid, "rating": 5, "would_live_again": True, "comment": "Tidy and kind"}
+    assert client.post("/api/reviews", json=body, headers=a["headers"]).status_code == 400  # nobody has chatted yet
+    from app.database import SessionLocal
+    from app.models import Message
+    db = SessionLocal()
+    db.add_all([Message(connection_id=cid, sender_id=a["id"], content="hi"), Message(connection_id=cid, sender_id=b["id"], content="hello")])
+    db.commit(); db.close()
+    assert client.post("/api/reviews", json=body, headers=a["headers"]).status_code == 200
+    assert client.post("/api/reviews", json={**body, "rating": 9}, headers=a["headers"]).status_code == 422
+    summary = client.get(f"/api/reviews/user/{b['id']}", headers=c["headers"]).json()
+    assert summary["count"] == 1 and summary["average"] == 5.0 and summary["would_live_again_pct"] == 100
+
+
+def test_group_rules_members_only_and_flat_match_score(client, make_user):
+    owner, outsider = make_user("Owner"), make_user("Outsider")
+    g = client.post("/api/groups", json={"name": "Trio", "city": "Hyderabad"}, headers=owner["headers"]).json()
+    r = client.post(f"/api/groups/{g['id']}/rules", json={"text": "Quiet hours after 11 PM"}, headers=owner["headers"])
+    assert r.status_code == 200 and r.json()["rules"][0]["text"] == "Quiet hours after 11 PM"
+    assert client.post(f"/api/groups/{g['id']}/rules", json={"text": "Nope nope"}, headers=outsider["headers"]).status_code == 404
+    rid = r.json()["rules"][0]["id"]
+    assert client.delete(f"/api/groups/{g['id']}/rules/{rid}", headers=owner["headers"]).json()["rules"] == []

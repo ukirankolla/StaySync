@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import ProfileModal from '../components/ProfileModal'
@@ -11,7 +11,8 @@ export default function Listings() {
   const { user } = useAuth()
   const [listings, setListings] = useState([])
   const [mine, setMine] = useState([])
-  const [filters, setFilters] = useState({ city: '', maxRent: '' })
+  const [sp] = useSearchParams()
+  const [filters, setFilters] = useState({ city: sp.get('city') || '', maxRent: sp.get('max_rent') || '' })
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({
     title: '', description: '', city: '', area: '', rent: '', deposit: '',
@@ -355,6 +356,7 @@ export default function Listings() {
                 <span className="chip chip-gray">{l.room_type.replace('_', ' ')}</span>
                 {l.bhk && <span className="chip chip-gray">{l.bhk}</span>}
                 {l.is_verified && <span className="chip chip-green">verified</span>}
+                {l.match_score != null && <span className="chip chip-green" title="Average compatibility with the people already living here">{Math.round(l.match_score)}% flat match</span>}
               </div>
               {l.description && <p className="muted mt-8" style={{ fontSize: '.88rem', lineHeight: 1.5 }}>{l.description}</p>}
               {l.photos?.length > 0 && (

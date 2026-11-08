@@ -11,11 +11,13 @@ const PRIVACY_FIELDS = [
   ['bio', 'my bio'],
   ['move_in_date', 'my move-in date'],
   ['photos', 'my photos'],
+  ['lifestyle', 'my lifestyle badges'],
 ]
 
 export default function Profile() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [strength, setStrength] = useState(null)
   const [delOpen, setDelOpen] = useState(false)
   const [delText, setDelText] = useState('')
   const [delBusy, setDelBusy] = useState(false)
@@ -37,6 +39,10 @@ export default function Profile() {
   const [otpStep, setOtpStep] = useState('idle')
   const [pw, setPw] = useState({ current_password: '', new_password: '' })
   const [pwMsg, setPwMsg] = useState('')
+
+  useEffect(() => {
+    api('/profile/me/strength').then(setStrength).catch(() => {})
+  }, [saved])
 
   useEffect(() => {
     api('/profile/me').then((p) => {
@@ -165,6 +171,19 @@ export default function Profile() {
       {/* Profile Form */}
       <form className="form card" onSubmit={submit} style={{ maxWidth: 640 }}>
         <h2 className="center">Your profile</h2>
+        {strength && (
+          <div className="mb-16">
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.88rem' }}>
+              <strong>Profile strength</strong><span>{strength.percent}%</span>
+            </div>
+            <div className="q-progress" style={{ margin: '6px 0' }}><div className="q-progress-fill" style={{ width: `${strength.percent}%` }} /></div>
+            {strength.missing.length > 0 && (
+              <div className="muted" style={{ fontSize: '.8rem' }}>
+                To improve: {strength.missing.map((x) => `${x.label} (+${x.points}%)`).join(', ')}
+              </div>
+            )}
+          </div>
+        )}
         {error && <div className="alert">{error}</div>}
         {saved && <div className="alert alert-success">Saved!</div>}
         <div className="field">

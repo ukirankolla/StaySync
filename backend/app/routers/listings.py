@@ -108,6 +108,8 @@ def _serialize_many(listings: list[Listing], viewer: User, db: Session) -> list[
                 score=score, reasons=reasons, is_you=r.user_id == viewer.id,
             ))
         out.residents = residents
+        scores = [r.score for r in residents if r.score is not None and not r.is_you and r.status == "accepted"]
+        out.match_score = round(sum(scores) / len(scores), 1) if scores else None
         outs.append(out)
     return outs
 

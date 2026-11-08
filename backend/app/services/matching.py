@@ -134,6 +134,33 @@ def compute_compatibility(
     }
 
 
+BADGE_LABELS = {
+    "wake_time": {"Before 6 AM": "Early riser", "6 AM – 8 AM": "Early riser", "After 10 AM": "Late riser"},
+    "sleep_time": {"12 AM – 2 AM": "Night owl", "After 2 AM": "Night owl", "Before 10 PM": "Early sleeper"},
+    "smoking": {"Never": "Non-smoker"},
+    "drinking": {"Never": "Non-drinker"},
+    "food_pref": {"Vegetarian": "Vegetarian", "Eggetarian": "Eggetarian", "Non-vegetarian": "Non-veg"},
+    "fitness": {"Daily": "Gym regular", "Few times a week": "Gym regular"},
+    "personality": {"Introvert": "Introvert", "Ambivert": "Ambivert", "Extrovert": "Extrovert"},
+}
+
+
+def lifestyle_badges(answers: dict | None, limit: int = 6) -> list[str]:
+    """Short, non-sensitive tags shown on cards (the owner can hide them in privacy settings)."""
+    a = answers or {}
+    out: list[str] = []
+    for key, mapping in BADGE_LABELS.items():
+        label = mapping.get(str(a.get(key)))
+        if label and label not in out:
+            out.append(label)
+    try:
+        c = int(a.get("cleanliness"))
+        out.append("Tidy" if c >= 4 else ("Relaxed about mess" if c <= 2 else "Moderately tidy"))
+    except (TypeError, ValueError):
+        pass
+    return out[:limit]
+
+
 def _lower_first(text: str) -> str:
     return text[:1].lower() + text[1:]
 
@@ -175,6 +202,20 @@ def generate_reasons(qa, qb, category_scores, sub, pa, pb) -> list[str]:
         else:
             text = "don't drink" if a == "Never" else ("drink occasionally" if a == "Occasionally" else "drink regularly")
         reasons.append(f"Both {text}")
+
+    a, b = qa.get("personality"), qb.get("personality")
+    if a and b and a == b:
+        reasons.append(f"Both are {str(a).lower()}s")
+
+    a, b = qa.get("fitness"), qb.get("fitness")
+    if a and b and a == b:
+        reasons.append({"Daily": "Both work out daily", "Few times a week": "Both work out a few times a week",
+                        "Rarely": "Both work out rarely", "Never": "Neither works out"}.get(str(a), "Similar fitness routines"))
+
+    a, b = qa.get("study_hours"), qb.get("study_hours")
+    if a and b and a == b:
+        reasons.append({"9–6 fixed": "Both keep fixed 9–6 hours", "Flexible": "Both have flexible hours",
+                        "Late shifts": "Both work late shifts", "Exam-time heavy": "Both are exam-heavy"}.get(str(a), "Similar study/work hours"))
 
     a, b = qa.get("food_pref"), qb.get("food_pref")
     if a and b and a == b and a != "No preference":

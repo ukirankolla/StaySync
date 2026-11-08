@@ -11,6 +11,19 @@ export default function Connections() {
   const [fbOpen, setFbOpen] = useState(null)
   const [fbForm, setFbForm] = useState({ fits: true, outcome: 'talking', comment: '' })
 
+  const [rv, setRv] = useState({})        // connection_id -> my review
+  const [rvOpen, setRvOpen] = useState(null)
+  const [rvForm, setRvForm] = useState({ rating: 5, would_live_again: true, comment: '' })
+
+  const saveReview = async (id) => {
+    try {
+      await api('/reviews', { method: 'POST', body: { connection_id: id, ...rvForm, comment: rvForm.comment || null } })
+      setRv({ ...rv, [id]: { rating: rvForm.rating, would_live_again: rvForm.would_live_again } })
+      setRvOpen(null)
+      setErr('')
+    } catch (e) { setErr(e.message) }
+  }
+
   const saveFeedback = async (id) => {
     try {
       await api('/feedback', { method: 'POST', body: { connection_id: id, ...fbForm, comment: fbForm.comment || null } })
@@ -20,6 +33,7 @@ export default function Connections() {
   }
 
   const load = () => {
+    api('/reviews/mine').then(setRv).catch(() => {})
     api('/feedback/mine').then(setFb).catch(() => {})
     api('/matching/connections').then(setConns).catch((e) => setErr(e.message)).finally(() => setLoading(false))
   }
@@ -35,7 +49,6 @@ export default function Connections() {
   }
 
   if (loading) return <div className="page-muted">Loading connections…</div>
-  if (err) return <div className="page-muted">{err}</div>
 
   const pending = conns.filter((c) => c.status === 'pending')
   const accepted = conns.filter((c) => c.status === 'accepted')
@@ -72,6 +85,9 @@ export default function Connections() {
             <button className="btn btn-ghost btn-sm" onClick={() => { setFbOpen(fbOpen === c.id ? null : c.id); setFbForm({ fits: fb[c.id]?.fits ?? true, outcome: fb[c.id]?.outcome ?? 'talking', comment: '' }) }}>
               {fb[c.id] ? 'Edit feedback' : 'Give feedback'}
             </button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setRvOpen(rvOpen === c.id ? null : c.id); setRvForm({ rating: rv[c.id]?.rating ?? 5, would_live_again: rv[c.id]?.would_live_again ?? true, comment: '' }) }}>
+              {rv[c.id] ? `★ ${rv[c.id].rating} · Edit review` : '☆ Review'}
+            </button>
             <button className="btn btn-primary btn-sm" onClick={() => navigate(`/chat/${c.id}`)}>
               <span>💬</span> Chat
             </button>
@@ -99,9 +115,28 @@ export default function Connections() {
     </div>
   )
 
+  const ReviewForm = ({ c }) => (
+    <div className="card" style={{ margin: '-4px 0 8px' }}>
+      <strong style={{ fontSize: '.9rem' }}>Review {c.peer_name}</strong>
+      <p className="muted" style={{ fontSize: '.78rem', margin: '2px 0 8px' }}>Shown on their profile. You can review only after you have both exchanged messages.</p>
+      <div style={{ display: 'flex', gap: 4 }}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button key={n} type="button" className={`btn btn-sm ${rvForm.rating >= n ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setRvForm({ ...rvForm, rating: n })}>★</button>
+        ))}
+      </div>
+      <label className="form-note" style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '8px 0' }}>
+        <input type="checkbox" checked={rvForm.would_live_again} onChange={(e) => setRvForm({ ...rvForm, would_live_again: e.target.checked })} />
+        Would live together again
+      </label>
+      <input className="input" maxLength={500} placeholder="A line about them (optional)" value={rvForm.comment} onChange={(e) => setRvForm({ ...rvForm, comment: e.target.value })} />
+      <button className="btn btn-primary btn-sm mt-8" onClick={() => saveReview(c.id)}>Save review</button>
+    </div>
+  )
+
   return (
     <div>
       <h2>Connections</h2>
+      {err && <div className="alert mb-16">{err}</div>}
       <div className="live-indicator mb-16"><span className="live-dot" /> Real-time updates</div>
 
       <h3 className="mt-16 mb-8" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -120,7 +155,7 @@ export default function Connections() {
       </h3>
       {accepted.length === 0 ? <p className="muted">No accepted connections yet.</p> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {accepted.map((c) => (<React.Fragment key={c.id}><ConnectionRow c={c} />{fbOpen === c.id && <FeedbackForm c={c} />}</React.Fragment>))}
+          {accepted.map((c) => (<React.Fragment key={c.id}><ConnectionRow c={c} />{fbOpen === c.id && <FeedbackForm c={c} />}{rvOpen === c.id && <ReviewForm c={c} />}</React.Fragment>))}
         </div>
       )}
 

@@ -5,6 +5,7 @@ import Avatar from './Avatar'
 export default function MatchCard({ match, onAction, onViewProfile }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [saved, setSaved] = useState(!!match.is_saved)
 
   const connect = async () => {
     setBusy(true)
@@ -17,6 +18,22 @@ export default function MatchCard({ match, onAction, onViewProfile }) {
     } finally {
       setBusy(false)
     }
+  }
+
+  const toggleSave = async () => {
+    try {
+      if (saved) await api(`/matching/marks/${match.user_id}`, { method: 'DELETE' })
+      else await api('/matching/marks', { method: 'POST', body: { user_id: match.user_id, kind: 'saved' } })
+      setSaved(!saved)
+      onAction?.(saved ? 'unsaved' : 'saved', match.user_id)
+    } catch (e) { setErr(e.message) }
+  }
+
+  const skip = async () => {
+    try {
+      await api('/matching/marks', { method: 'POST', body: { user_id: match.user_id, kind: 'skipped' } })
+      onAction?.('skipped', match.user_id)
+    } catch (e) { setErr(e.message) }
   }
 
   const report = async () => {
@@ -71,6 +88,15 @@ export default function MatchCard({ match, onAction, onViewProfile }) {
         {match.move_in_date && <span className="chip chip-gray">moves {match.move_in_date}</span>}
       </div>
 
+      {match.badges?.length > 0 && (
+        <div className="match-meta">
+          {match.badges.map((b) => <span className="chip chip-gray" key={b}>{b}</span>)}
+        </div>
+      )}
+      {match.review_count > 0 && (
+        <div className="muted" style={{ fontSize: '.8rem' }}>⭐ {match.rating} · {match.review_count} review{match.review_count > 1 ? 's' : ''} from past roommates</div>
+      )}
+
       {match.bio && <p className="muted" style={{ fontSize: '.87rem', margin: 0, lineHeight: 1.5 }}>{match.bio}</p>}
 
       <div className="muted" style={{ fontSize: '.72rem', fontWeight: 600, marginTop: 4 }}>Why StaySync recommends this match</div>
@@ -84,6 +110,8 @@ export default function MatchCard({ match, onAction, onViewProfile }) {
         <button className="btn btn-primary btn-sm" disabled={busy} onClick={connect}>
           {busy ? 'Connecting…' : '🔗 Connect'}
         </button>
+        <button className="btn btn-ghost btn-sm" onClick={toggleSave}>{saved ? '★ Saved' : '☆ Save'}</button>
+        <button className="btn btn-ghost btn-sm" onClick={skip} title="Hide this profile">Skip</button>
         <button className="btn btn-ghost btn-sm" onClick={() => onViewProfile?.(match.user_id)}>View profile</button>
         <button className="btn btn-ghost btn-sm" onClick={report} title="Report">Report</button>
         <button className="btn btn-ghost btn-sm" onClick={block} title="Block">Block</button>
