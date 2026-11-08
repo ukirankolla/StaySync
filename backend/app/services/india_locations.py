@@ -227,6 +227,18 @@ INDIA_STATES: dict[str, list[str]] = {
     ],
 }
 
+# Extra towns (census towns / large settlements, ~4,800) so every town resolves to its state.
+import json as _json
+from pathlib import Path as _Path
+
+try:
+    _extra = _json.loads((_Path(__file__).with_name("india_towns.json")).read_text(encoding="utf-8"))
+    for _st, _names in _extra.items():
+        _have = {n.lower() for n in INDIA_STATES.setdefault(_st, [])}
+        INDIA_STATES[_st].extend(n for n in _names if n.lower() not in _have)
+except (OSError, ValueError):
+    pass
+
 # Flatten for reverse lookup: city -> state
 _CITY_STATE: dict[str, str] = {}
 

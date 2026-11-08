@@ -15,6 +15,7 @@ export default function Discover() {
   const [filters, setFilters] = useState({ area: '', maxBudget: '', sort: 'score' })
   const [applied, setApplied] = useState(null)
   const [onlySaved, setOnlySaved] = useState(false)
+  const [onlyReal, setOnlyReal] = useState(false)
   const [strength, setStrength] = useState(null)
   const [needQuestionnaire, setNeedQuestionnaire] = useState(false)
 
@@ -66,8 +67,10 @@ export default function Discover() {
     }
   }
 
-  const visible = matches.filter((m) => !blocked.has(m.user_id) && (!onlySaved || m.is_saved))
+  const visible = matches.filter((m) => !blocked.has(m.user_id) && (!onlySaved || m.is_saved) && (!onlyReal || !m.is_demo))
   const sorted = [...visible].sort((a, b) => {
+    // Real members always rank above demo profiles.
+    if (!!a.is_demo !== !!b.is_demo) return a.is_demo ? 1 : -1
     if (filters.sort === 'score') return (b.score ?? -1) - (a.score ?? -1)
     if (filters.sort === 'budget') return (a.budget_min || 0) - (b.budget_min || 0)
     return ((b.score ?? -1) - (a.score ?? -1))
@@ -138,6 +141,9 @@ export default function Discover() {
       <div className="mb-16">
         <button className={`btn btn-sm ${onlySaved ? 'btn-primary' : 'btn-outline'}`} onClick={() => setOnlySaved(!onlySaved)}>
           {onlySaved ? '★ Showing saved' : '☆ Saved only'}
+        </button>{' '}
+        <button className={`btn btn-sm ${onlyReal ? 'btn-primary' : 'btn-outline'}`} onClick={() => setOnlyReal(!onlyReal)}>
+          {onlyReal ? '✓ Real members only' : 'Real members only'}
         </button>
       </div>
       {notice && <div className="alert alert-success mb-16">{notice}</div>}
