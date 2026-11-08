@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -110,7 +110,8 @@ def _run_recommendations(user: User, db: Session, mine_q: Questionnaire | None,
 
 @router.get("/recommendations", response_model=list[MatchResult])
 def recommendations(user: User = Depends(get_current_user), db: Session = Depends(get_db),
-                    area: str | None = None, city: str | None = None, max_budget: int | None = None):
+                    area: str | None = None, city: str | None = None, max_budget: int | None = None,
+                    real_only: bool = False):
     profile = db.query(Profile).filter(Profile.user_id == user.id).first()
     mine_q = db.query(Questionnaire).filter(Questionnaire.user_id == user.id).first()
 
@@ -145,7 +146,8 @@ def recommendations(user: User = Depends(get_current_user), db: Session = Depend
         nearby = nearby_cities(term)
         if nearby:
             nearby_cities_list, state = nearby
-            fb_filter = or_(*(Profile.city.ilike(f"%{c}%") for c in nearby_cities_list))
+            # Exact (case-insensitive) match: substring matching made "Puri" match "Shivpuri".
+            fb_filter = func.lower(Profile.city).in_([c.lower() for c in nearby_cities_list])
             note = f"No members in “{term.title()}” yet. Showing real members from nearby cities in {state}."
             results = _run_recommendations(user, db, mine_q, profile, blocked, connected,
                                            loc_filter=fb_filter, max_budget=max_budget,
@@ -161,7 +163,10 @@ def recommendations(user: User = Depends(get_current_user), db: Session = Depend
     for r in results:
         r.is_saved = r.user_id in saved
     # Rank by the transparent rules-based score only (explainable by design).
-    results.sort(key=lambda r: r.score if r.score is not None else -1, reverse=True)
+    if real_only:
+        results = [r for r in results if not r.is_demo]
+    # Real members always come first; the compatibility score orders within each group.
+    results.sort(key=lambda r: (not r.is_demo, r.score if r.score is not None else -1), reverse=True)
     track(db, user.id, "recommendations_viewed",
           {"count": len(results), "fallback": bool(results and results[0].is_fallback),
            "area": area, "city": city})
