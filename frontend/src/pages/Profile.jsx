@@ -305,6 +305,7 @@ export default function Profile() {
 
       {/* Phones have no top nav links: account actions live here */}
       <div className="card mt-16 mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <Link to="/hostels" className="btn btn-ghost btn-block">College / hostel allocation</Link>
         {user?.role === 'admin' && <Link to="/admin" className="btn btn-ghost btn-block">Admin dashboard</Link>}
         <button type="button" className="btn btn-ghost btn-block" onClick={() => { logout(); navigate('/') }}>Log out</button>
       </div>

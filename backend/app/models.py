@@ -210,3 +210,54 @@ class Event(Base):
     event_type: Mapped[str] = mapped_column(String(48), index=True)
     payload: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class MatchFeedback(Base):
+    """Outcome feedback after two people connect (deck: measure outcomes, not downloads)."""
+    __tablename__ = "match_feedback"
+    __table_args__ = (UniqueConstraint("user_id", "connection_id", name="uq_feedback_user_conn"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    connection_id: Mapped[int] = mapped_column(ForeignKey("connections.id", ondelete="CASCADE"), index=True)
+    fits: Mapped[bool] = mapped_column(Boolean)  # did the suggested match fit my preferences?
+    outcome: Mapped[str] = mapped_column(String(24), default="talking")
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class Hostel(Base):
+    """A college / hostel / PG operator running shared-room allocation on StaySync."""
+    __tablename__ = "hostels"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    name: Mapped[str] = mapped_column(String(160))
+    institution: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    join_code: Mapped[str] = mapped_column(String(12), unique=True, index=True)
+    room_size: Mapped[int] = mapped_column(Integer, default=2)
+    allocation_final: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class HostelMember(Base):
+    __tablename__ = "hostel_members"
+    __table_args__ = (UniqueConstraint("hostel_id", "user_id", name="uq_hostel_member"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    hostel_id: Mapped[int] = mapped_column(ForeignKey("hostels.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    block: Mapped[str] = mapped_column(String(80), default="General")  # hostel/gender policy group
+    special_request: Mapped[str | None] = mapped_column(Text, nullable=True)  # accessibility etc.
+    room_no: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="intake")  # intake | suggested | approved
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class HostelChangeRequest(Base):
+    __tablename__ = "hostel_change_requests"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    hostel_id: Mapped[int] = mapped_column(ForeignKey("hostels.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    reason: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending | approved | declined
+    staff_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

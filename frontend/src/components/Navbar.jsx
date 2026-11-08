@@ -24,6 +24,7 @@ export default function Navbar() {
             <NavLink to="/connections" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Connections</NavLink>
             <NavLink to="/groups" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Groups</NavLink>
             <NavLink to="/listings" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Flats</NavLink>
+            <NavLink to="/hostels" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Hostel</NavLink>
             {user.role === 'admin' && (
               <NavLink to="/admin" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Admin</NavLink>
             )}

@@ -55,7 +55,7 @@ export default function MatchCard({ match, onAction, onViewProfile }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <strong style={{ fontSize: '1rem' }}>{match.full_name}</strong>
-            {match.is_verified && <span className="badge" style={{ fontSize: '.65rem' }}>verified</span>}
+            {match.is_verified && <span className="badge" style={{ fontSize: '.65rem' }} title="Identity checked by StaySync. A badge does not guarantee safety.">verified</span>}
           </div>
           <div className="muted" style={{ fontSize: '.83rem', marginTop: 2 }}>
             {match.age && `${match.age} · `}{match.occupation && match.occupation.replace('_', ' ')} · {match.city}
@@ -72,6 +72,7 @@ export default function MatchCard({ match, onAction, onViewProfile }) {
 
       {match.bio && <p className="muted" style={{ fontSize: '.87rem', margin: 0, lineHeight: 1.5 }}>{match.bio}</p>}
 
+      <div className="muted" style={{ fontSize: '.72rem', fontWeight: 600, marginTop: 4 }}>Why StaySync recommends this match</div>
       <div className="reasons">
         {match.reasons.slice(0, 4).map((r, i) => <div className="reason" key={i}>{r}</div>)}
       </div>

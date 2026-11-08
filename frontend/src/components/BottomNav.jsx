@@ -15,7 +15,7 @@ const TABS = [
     icon: <Icon><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.5-4.8A8 8 0 1 1 21 12Z" /></Icon> },
   { to: '/groups', label: 'Groups', match: ['/groups'],
     icon: <Icon><circle cx="9" cy="8" r="3.2" /><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" /><path d="M16 5.2a3.2 3.2 0 0 1 0 5.6" /><path d="M18 14.3c2 .7 3.5 2.6 3.5 5.7" /></Icon> },
-  { to: '/profile', label: 'Profile', match: ['/profile', '/admin'],
+  { to: '/profile', label: 'Profile', match: ['/profile', '/admin', '/hostels'],
     icon: <Icon><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" /></Icon> },
 ]
 

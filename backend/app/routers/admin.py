@@ -6,8 +6,12 @@ from ..database import get_db
 from ..deps import require_admin
 from ..models import (
     Connection,
+    Block,
     Event,
+    Hostel,
+    HostelMember,
     Listing,
+    MatchFeedback,
     Message,
     Profile,
     Questionnaire,
@@ -43,7 +47,33 @@ def analytics(db: Session = Depends(get_db)):
         .all()
     )
 
+    fb_total = db.query(func.count(MatchFeedback.id)).scalar()
+    fb_fit = db.query(func.count(MatchFeedback.id)).filter(MatchFeedback.fits.is_(True)).scalar()
+    fb_by_outcome = dict(db.query(MatchFeedback.outcome, func.count(MatchFeedback.id))
+                         .group_by(MatchFeedback.outcome).all())
+    talking = db.query(func.count(func.distinct(Message.connection_id))).scalar()
+    outcomes = {
+        "match_quality": {"feedback_count": fb_total, "fit_rate": round(fb_fit / fb_total * 100, 1) if fb_total else None},
+        "user_trust": {
+            "verified_profiles": db.query(func.count(Profile.id)).filter(Profile.is_verified.is_(True)).scalar(),
+            "reports": db.query(func.count(Report.id)).scalar(),
+            "blocks": db.query(func.count(Block.id)).scalar(),
+        },
+        "real_world_conversion": {
+            "accepted_connections": accepted_connections,
+            "connections_with_chat": talking,
+            "viewing": fb_by_outcome.get("viewing", 0),
+            "living_together": fb_by_outcome.get("living_together", 0),
+        },
+        "institution_value": {
+            "hostels": db.query(func.count(Hostel.id)).scalar(),
+            "students_in_intake": db.query(func.count(HostelMember.id)).scalar(),
+            "students_allocated": db.query(func.count(HostelMember.id)).filter(HostelMember.status == "approved").scalar(),
+        },
+    }
+
     return {
+        "outcomes": outcomes,
         "total_users": total_users,
         "suspended_users": suspended,
         "profiles_completed": with_profiles,

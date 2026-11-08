@@ -289,3 +289,13 @@ CI (`.github/workflows/ci.yml`) runs the backend tests and a frontend build on e
 1. Branch from `main`: `feature/<short-name>` or `fix/<short-name>`.
 2. Keep changes focused; run the backend and `npm run build` in `frontend/` before opening a pull request.
 3. Describe what changed and how you tested it. Add screenshots for UI changes.
+
+## Product alignment (SyncStay concept deck)
+
+| Deck principle | In the app |
+|---|---|
+| Explainable matching, no mystery AI score | Rules-based weighted score with plain-language reasons; ranking uses this score only |
+| Scores are recommendations, not guarantees | Notice on Discover, match cards and hostel rooms |
+| Mutual opt-in, chat, report/block, privacy controls | Connection must be accepted by both sides; report, block, hide profile, delete account |
+| Outcomes, not downloads | Post-connection feedback (fit / viewing / living together) and outcome metrics in the admin dashboard |
+| Colleges & hostels: intake, matching, admin review, allocation | `/hostels`: join code + consent intake, capacity- and block-aware suggestions, staff edit and finalise, student change requests, aggregate campus insights |
