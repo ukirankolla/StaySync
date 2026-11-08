@@ -12,7 +12,7 @@ export default function Discover() {
   const [blocked, setBlocked] = useState(new Set())
   const [connected, setConnected] = useState(new Set())
   const [viewing, setViewing] = useState(null)
-  const [filters, setFilters] = useState({ area: '', maxBudget: '', sort: 'ml' })
+  const [filters, setFilters] = useState({ area: '', maxBudget: '', sort: 'score' })
   const [applied, setApplied] = useState(null)
   const [needQuestionnaire, setNeedQuestionnaire] = useState(false)
 
@@ -56,7 +56,7 @@ export default function Discover() {
   const sorted = [...visible].sort((a, b) => {
     if (filters.sort === 'score') return (b.score ?? -1) - (a.score ?? -1)
     if (filters.sort === 'budget') return (a.budget_min || 0) - (b.budget_min || 0)
-    return ((b.ml_score ?? b.score ?? -1) - (a.ml_score ?? a.score ?? -1))
+    return ((b.score ?? -1) - (a.score ?? -1))
   })
   const fallback = visible.find((m) => m.is_fallback)
 
@@ -98,7 +98,7 @@ export default function Discover() {
         <div className="field">
           <label>Sort by</label>
           <select className="select" value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value })}>
-            <option value="ml">AI best match</option>
+            <option value="score">Best compatibility</option>
             <option value="score">Compatibility score</option>
             <option value="budget">Lowest budget</option>
           </select>
@@ -106,7 +106,7 @@ export default function Discover() {
         <button className="btn btn-primary btn-sm" onClick={() => setApplied({ area: filters.area, maxBudget: filters.maxBudget })}>
           <span>🔍</span> Apply
         </button>
-        <button className="btn btn-ghost btn-sm" onClick={() => { setFilters({ area: '', maxBudget: '', sort: 'ml' }); setApplied(null) }}>Reset</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => { setFilters({ area: '', maxBudget: '', sort: 'score' }); setApplied(null) }}>Reset</button>
       </div>
 
       {notice && <div className="alert alert-success mb-16">{notice}</div>}
@@ -124,18 +124,23 @@ export default function Discover() {
           <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: 8 }}>No members found here yet</div>
           <p>StaySync only shows real members. Try a nearby city, or invite friends to join.</p>
           {matches.length === 0 && (
-            <p>Complete your profile and lifestyle questionnaire to unlock AI recommendations.</p>
+            <p>Complete your profile and lifestyle questionnaire to unlock personalised recommendations.</p>
           )}
           <p>
             <Link to="/questionnaire" className="btn btn-primary btn-sm mt-8">Complete questionnaire</Link>
           </p>
         </div>
       ) : (
+        <>
+        <p className="muted" style={{ fontSize: '.8rem', margin: '0 0 12px' }}>
+          Scores are recommendations, not guarantees. Read the reasons, chat, and agree on expectations before you decide.
+        </p>
         <div className="grid grid-2">
           {sorted.map((m) => (
             <MatchCard key={m.user_id} match={m} onAction={handleAction} onViewProfile={setViewing} />
           ))}
         </div>
+        </>
       )}
 
       {viewing && (

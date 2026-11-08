@@ -7,8 +7,20 @@ export default function Connections() {
   const [conns, setConns] = useState([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
+  const [fb, setFb] = useState({})        // connection_id -> saved feedback
+  const [fbOpen, setFbOpen] = useState(null)
+  const [fbForm, setFbForm] = useState({ fits: true, outcome: 'talking', comment: '' })
+
+  const saveFeedback = async (id) => {
+    try {
+      await api('/feedback', { method: 'POST', body: { connection_id: id, ...fbForm, comment: fbForm.comment || null } })
+      setFb({ ...fb, [id]: { fits: fbForm.fits, outcome: fbForm.outcome } })
+      setFbOpen(null)
+    } catch (e) { setErr(e.message) }
+  }
 
   const load = () => {
+    api('/feedback/mine').then(setFb).catch(() => {})
     api('/matching/connections').then(setConns).catch((e) => setErr(e.message)).finally(() => setLoading(false))
   }
   useEffect(load, [])
@@ -56,11 +68,34 @@ export default function Connections() {
           </>
         )}
         {c.status === 'accepted' && (
-          <button className="btn btn-primary btn-sm" onClick={() => navigate(`/chat/${c.id}`)}>
-            <span>💬</span> Chat
-          </button>
+          <>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setFbOpen(fbOpen === c.id ? null : c.id); setFbForm({ fits: fb[c.id]?.fits ?? true, outcome: fb[c.id]?.outcome ?? 'talking', comment: '' }) }}>
+              {fb[c.id] ? 'Edit feedback' : 'Give feedback'}
+            </button>
+            <button className="btn btn-primary btn-sm" onClick={() => navigate(`/chat/${c.id}`)}>
+              <span>💬</span> Chat
+            </button>
+          </>
         )}
       </div>
+    </div>
+  )
+
+  const FeedbackForm = ({ c }) => (
+    <div className="card" style={{ margin: '-4px 0 8px' }}>
+      <strong style={{ fontSize: '.9rem' }}>Did {c.peer_name} fit what you were looking for?</strong>
+      <div style={{ display: 'flex', gap: 8, margin: '8px 0' }}>
+        <button type="button" className={`btn btn-sm ${fbForm.fits ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setFbForm({ ...fbForm, fits: true })}>Yes</button>
+        <button type="button" className={`btn btn-sm ${!fbForm.fits ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setFbForm({ ...fbForm, fits: false })}>Not really</button>
+      </div>
+      <select className="select" value={fbForm.outcome} onChange={(e) => setFbForm({ ...fbForm, outcome: e.target.value })}>
+        <option value="talking">We're chatting</option>
+        <option value="viewing">We're viewing places together</option>
+        <option value="living_together">We decided to live together</option>
+        <option value="not_continuing">Not continuing</option>
+      </select>
+      <input className="input mt-8" maxLength={1000} placeholder="Anything else? (optional)" value={fbForm.comment} onChange={(e) => setFbForm({ ...fbForm, comment: e.target.value })} />
+      <button className="btn btn-primary btn-sm mt-8" onClick={() => saveFeedback(c.id)}>Save</button>
     </div>
   )
 
@@ -85,7 +120,7 @@ export default function Connections() {
       </h3>
       {accepted.length === 0 ? <p className="muted">No accepted connections yet.</p> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {accepted.map((c) => <ConnectionRow key={c.id} c={c} />)}
+          {accepted.map((c) => (<React.Fragment key={c.id}><ConnectionRow c={c} />{fbOpen === c.id && <FeedbackForm c={c} />}</React.Fragment>))}
         </div>
       )}
 

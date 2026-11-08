@@ -76,6 +76,14 @@ export default function Admin() {
             <Stat label="Messages" value={stats.total_messages} icon="💬" />
             <Stat label="Groups" value={stats.total_groups} icon="👥" />
             <Stat label="Listings" value={stats.total_listings} icon="🏢" />
+            {stats.outcomes && (<>
+              <Stat label="Match fit rate" value={stats.outcomes.match_quality.fit_rate == null ? '—' : `${stats.outcomes.match_quality.fit_rate}%`} icon="🎯" />
+              <Stat label="Chats started" value={stats.outcomes.real_world_conversion.connections_with_chat} icon="🗨️" />
+              <Stat label="Viewing together" value={stats.outcomes.real_world_conversion.viewing} icon="🏠" />
+              <Stat label="Chose to live together" value={stats.outcomes.real_world_conversion.living_together} icon="🤝" />
+              <Stat label="Verified profiles" value={stats.outcomes.user_trust.verified_profiles} icon="🛡️" />
+              <Stat label="Hostels / students allocated" value={`${stats.outcomes.institution_value.hostels} / ${stats.outcomes.institution_value.students_allocated}`} icon="🏫" />
+            </>)}
             <Stat label="Approved listings" value={stats.approved_listings} icon="✅" />
             <Stat label="Pending reports" value={stats.pending_reports} icon="⚠️" />
             <Stat label="Suspended users" value={stats.suspended_users} icon="🚫" />

@@ -18,6 +18,7 @@ import Connections from './pages/Connections'
 import Chat from './pages/Chat'
 import Groups from './pages/Groups'
 import Listings from './pages/Listings'
+import Hostels from './pages/Hostels'
 import Admin from './pages/Admin'
 
 function Protected({ children }) {
@@ -58,6 +59,7 @@ export default function App() {
           <Route path="/chat/:connectionId" element={<Protected><Chat /></Protected>} />
           <Route path="/groups" element={<Protected><Groups /></Protected>} />
           <Route path="/listings" element={<Protected><Listings /></Protected>} />
+          <Route path="/hostels" element={<Protected><Hostels /></Protected>} />
           <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

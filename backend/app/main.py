@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .database import Base, engine, ensure_schema
-from .routers import admin, auth, chat, groups, listings, matching, ml, moderation, profile, uploads
+from .routers import admin, auth, chat, feedback, groups, hostels, listings, matching, ml, moderation, profile, uploads
 from .services import ml_model
 from .services.bootstrap import secure_accounts
 
@@ -77,7 +77,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for r in (auth, profile, matching, chat, groups, listings, moderation, admin, ml, uploads):
+for r in (auth, profile, matching, chat, groups, listings, moderation, admin, ml, uploads, feedback, hostels):
     app.include_router(r.router, prefix=settings.api_prefix)
 
 if settings.storage_backend == "local":

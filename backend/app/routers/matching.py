@@ -17,7 +17,6 @@ from ..services.chat_manager import chat_manager
 from ..services.events import track
 from ..services.location import nearby_cities
 from ..services.matching import compute_compatibility
-from ..services.ml_model import predict as ml_predict
 
 router = APIRouter(prefix="/matching", tags=["matching"])
 
@@ -46,12 +45,9 @@ def _to_match_result(peer: User, qa: Questionnaire | None, qb: Questionnaire | N
         qa.answers if qa else {}, qb.answers if qb else {},
         pa.__dict__ if pa else {}, pb.__dict__ if pb else {},
     )
-    ml = ml_predict(qa.answers if qa else {}, qb.answers if qb else {},
-                    pa.__dict__ if pa else {}, pb.__dict__ if pb else {})
     # No questionnaire yet means no real score: show nothing rather than a misleading 0%.
     if not (qa and qa.answers):
         result = {**result, "score": None}
-        ml = None
     return MatchResult(
         user_id=peer.id,
         full_name=pb.full_name if pb else "User",
@@ -68,7 +64,7 @@ def _to_match_result(peer: User, qa: Questionnaire | None, qb: Questionnaire | N
         is_fallback=is_fallback,
         fallback_note=fallback_note,
         score=result["score"],
-        ml_score=round(ml * 100, 1) if ml is not None else None,
+        ml_score=None,
         category_scores=result["category_scores"],
         reasons=result["reasons"],
     )
@@ -148,7 +144,8 @@ def recommendations(user: User = Depends(get_current_user), db: Session = Depend
                                            is_fallback=True,
                                            fallback_note=note)
 
-    results.sort(key=lambda r: (r.ml_score if r.ml_score is not None else (r.score if r.score is not None else -1)), reverse=True)
+    # Rank by the transparent rules-based score only (explainable by design).
+    results.sort(key=lambda r: r.score if r.score is not None else -1, reverse=True)
     track(db, user.id, "recommendations_viewed",
           {"count": len(results), "fallback": bool(results and results[0].is_fallback),
            "area": area, "city": city})
@@ -162,13 +159,11 @@ def score_with(peer_id: int, user: User = Depends(get_current_user), db: Session
         qa.answers if qa else {}, qb.answers if qb else {},
         pa.__dict__ if pa else {}, pb.__dict__ if pb else {},
     )
-    ml = ml_predict(qa.answers if qa else {}, qb.answers if qb else {},
-                    pa.__dict__ if pa else {}, pb.__dict__ if pb else {})
     explanation = get_agent("match_reason").run(result["reasons"], result["category_scores"], result["score"])
     return {
         "peer_id": peer.id,
         **result,
-        "ml_score": round(ml * 100, 1) if ml is not None else None,
+        "ml_score": None,
         "explanation": explanation,
     }
 
