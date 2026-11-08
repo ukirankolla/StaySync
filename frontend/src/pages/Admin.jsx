@@ -81,7 +81,6 @@ export default function Admin() {
               <Stat label="Chats started" value={stats.outcomes.real_world_conversion.connections_with_chat} icon="🗨️" />
               <Stat label="Viewing together" value={stats.outcomes.real_world_conversion.viewing} icon="🏠" />
               <Stat label="Chose to live together" value={stats.outcomes.real_world_conversion.living_together} icon="🤝" />
-              <Stat label="Verified profiles" value={stats.outcomes.user_trust.verified_profiles} icon="🛡️" />
               <Stat label="Hostels / students allocated" value={`${stats.outcomes.institution_value.hostels} / ${stats.outcomes.institution_value.students_allocated}`} icon="🏫" />
             </>)}
             <Stat label="Approved listings" value={stats.approved_listings} icon="✅" />

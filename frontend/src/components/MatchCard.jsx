@@ -73,7 +73,6 @@ export default function MatchCard({ match, onAction, onViewProfile }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <strong style={{ fontSize: '1rem' }}>{match.full_name}</strong>
             {match.is_demo && <span className="chip chip-gray" style={{ fontSize: '.65rem' }} title="Example profile used to show how StaySync works. Replies are labelled sample messages.">Demo profile</span>}
-            {match.is_verified && <span className="badge" style={{ fontSize: '.65rem' }} title="Identity checked by StaySync. A badge does not guarantee safety.">verified</span>}
           </div>
           <div className="muted" style={{ fontSize: '.83rem', marginTop: 2 }}>
             {match.age && `${match.age} · `}{match.occupation && match.occupation.replace('_', ' ')} · {match.city}

@@ -33,10 +33,6 @@ export default function Profile() {
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState(null)
   const [uploading, setUploading] = useState(false)
-  const [isVerified, setIsVerified] = useState(false)
-  const [verifyMsg, setVerifyMsg] = useState('')
-  const [otpCode, setOtpCode] = useState('')
-  const [otpStep, setOtpStep] = useState('idle')
   const [pw, setPw] = useState({ current_password: '', new_password: '' })
   const [pwMsg, setPwMsg] = useState('')
 
@@ -54,7 +50,6 @@ export default function Profile() {
         bio: p.bio || '', is_visible: p.is_visible, photos: p.photos || [],
         privacy: p.privacy || {},
       })
-      setIsVerified(p.is_verified)
     }).catch(() => {})
     api('/matching/agents/onboarding').then(setProgress).catch(() => {})
   }, [user])
@@ -80,19 +75,6 @@ export default function Profile() {
   }
 
   const removePhoto = (url) => setForm((f) => ({ ...f, photos: (f.photos || []).filter((p) => p !== url) }))
-
-  const requestVerify = async () => {
-    setVerifyMsg(''); setOtpCode('')
-    try { await api('/profile/verify/request', { method: 'POST', body: {} }); setOtpStep('sent') }
-    catch (err) { setVerifyMsg(err.message) }
-  }
-
-  const confirmVerify = async () => {
-    try {
-      await api('/profile/verify/confirm', { method: 'POST', body: { code: otpCode } })
-      setIsVerified(true); setOtpStep('idle'); setVerifyMsg('Your profile is now verified ✓')
-    } catch (err) { setVerifyMsg(err.message) }
-  }
 
   const changePassword = async (e) => {
     e.preventDefault(); setPwMsg('')
@@ -131,32 +113,6 @@ export default function Profile() {
 
   return (
     <div className="mt-8">
-      {/* Verification Section */}
-      <div className="card mb-16" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <strong style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>🛡️</span> Profile verification
-          </strong>
-          <div className="muted mt-4">
-            {isVerified
-              ? <span style={{ color: 'var(--success)' }}>✓ Verified — your identity is confirmed.</span>
-              : 'Verify your email to earn a verified badge and boost trust with roommates.'}
-          </div>
-        </div>
-        {otpStep !== 'idle' && <p className="muted" style={{ fontSize: '.8rem' }}>Check your inbox for the verification code.</p>}
-        {!isVerified && otpStep === 'idle' && <button className="btn btn-sm" onClick={requestVerify}>Verify now</button>}
-        {otpStep === 'sent' && (
-          <div className="field" style={{ display: 'flex', gap: 8, margin: 0, alignItems: 'end' }}>
-            <div>
-              <label>OTP</label>
-              <input className="input" value={otpCode} onChange={(e) => setOtpCode(e.target.value)} style={{ width: 110 }} />
-            </div>
-            <button className="btn btn-sm" onClick={confirmVerify}>Confirm</button>
-          </div>
-        )}
-        {verifyMsg && <div className="alert alert-success" style={{ margin: 0 }}>{verifyMsg}</div>}
-      </div>
-
       {/* Progress */}
       {progress && (
         <div className="card mb-16">

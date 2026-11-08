@@ -16,7 +16,6 @@ from ..schemas import (
     ProfileUpdate,
     QuestionnaireAnswerRequest,
     QuestionnaireOut,
-    VerifyProfileRequest,
 )
 from ..security import generate_otp, otp_expiry
 from ..config import settings
@@ -40,9 +39,8 @@ def profile_strength(user: User = Depends(get_current_user), db: Session = Depen
         ("budget", "Set your budget", 10, bool(p and p.budget_min)),
         ("move_in", "Add your move-in date", 5, bool(p and p.move_in_date)),
         ("bio", "Write a short bio", 10, bool(p and p.bio)),
-        ("photo", "Add a photo", 10, bool(p and p.photos)),
-        ("questionnaire", "Complete the lifestyle questionnaire", 30, bool(q and q.completed_at)),
-        ("verified", "Verify your email", 10, bool(p and p.is_verified)),
+        ("photo", "Add a photo", 15, bool(p and p.photos)),
+        ("questionnaire", "Complete the lifestyle questionnaire", 35, bool(q and q.completed_at)),
     ]
     return {
         "percent": sum(pts for _, _, pts, ok in checks if ok),
@@ -147,47 +145,3 @@ def _mask_private(profile: Profile) -> ProfileOut:
     if priv.get("photos") is False:
         out.photos = []
     return out
-
-
-@router.post("/verify/request")
-def request_verification(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    identifier = user.email or user.phone
-    if not identifier:
-        raise HTTPException(status_code=400, detail="Add an email or phone to your account first")
-    ratelimit.hit(f"verify:send:{user.id}", 5, 600, "Too many codes requested. Wait a few minutes and try again.")
-    code = generate_otp()
-    row = OtpCode(identifier=identifier, code=code, purpose="verify", expires_at=otp_expiry())
-    db.add(row)
-    db.commit()
-    delivery = send_otp(identifier, code)
-    if not delivery["delivered"] and not settings.dev_mode:
-        db.delete(row)
-        db.commit()
-        raise HTTPException(status_code=503, detail="We couldn't send the code right now. Please try again later.")
-    return {"message": f"Verification code sent to {identifier}", "channel": delivery["channel"],
-            "delivered": delivery["delivered"],
-            "dev_code": code if (not delivery["delivered"] and settings.dev_mode) else None}
-
-
-@router.post("/verify/confirm", response_model=ProfileOut)
-def confirm_verification(payload: VerifyProfileRequest, user: User = Depends(get_current_user),
-                         db: Session = Depends(get_db)):
-    identifier = user.email or user.phone
-    if not identifier:
-        raise HTTPException(status_code=400, detail="Add an email or phone to your account first")
-    fail_key = f"verify:fail:{user.id}"
-    ratelimit.ensure_not_locked(fail_key, 5, 600, "Too many wrong codes. Request a new code in a few minutes.")
-    now = datetime.now(timezone.utc)
-    otp = db.query(OtpCode).filter(
-        OtpCode.identifier == identifier, OtpCode.purpose == "verify", OtpCode.is_used.is_(False)
-    ).order_by(OtpCode.created_at.desc()).first()
-    if not otp or otp.expires_at.replace(tzinfo=timezone.utc) < now or not _secrets.compare_digest(otp.code, payload.code or ""):
-        ratelimit.record_failure(fail_key)
-        raise HTTPException(status_code=401, detail="Invalid or expired OTP")
-    ratelimit.clear(fail_key)
-    otp.is_used = True
-    profile = db.query(Profile).filter(Profile.user_id == user.id).first()
-    profile.is_verified = True
-    db.commit()
-    track(db, user.id, "profile_verified", {})
-    return ProfileOut.model_validate(profile)

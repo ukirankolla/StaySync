@@ -66,7 +66,7 @@ StaySync puts **lifestyle compatibility before room allocation**:
 
 - **Explainable, not mysterious.** A rules-based score with the reasons shown. Scores are recommendations, never guarantees.
 - **You control your data.** Hide your profile, edit your answers, delete your account. Chat is opt-in on both sides.
-- **Trust is part of the product.** Report and block tools, listing approval before going live, and a verified badge that never claims to guarantee safety.
+- **Trust is part of the product.** Report and block tools, listing approval before going live, and honest wording that never claims to guarantee safety.
 - **Humans decide.** For colleges, staff review and make the final allocation, and students have a documented way to request a change.
 - **Real data only.** StaySync shows real members and real listings, never fabricated ones.
 
@@ -75,7 +75,7 @@ StaySync puts **lifestyle compatibility before room allocation**:
 | Area | What you get |
 |------|--------------|
 | **Accounts** | Email/phone registration, password and OTP login, password reset, in-app account deletion |
-| **Profiles** | Age, occupation, city/area, budget, move-in date, bio, photos, privacy controls, verified badge |
+| **Profiles** | Age, occupation, city/area, budget, move-in date, bio, photos, privacy controls |
 | **Matching** | 12-question lifestyle questionnaire; weighted, explainable compatibility score with reasons; nearby-city fallback when a city has no members yet |
 | **Connections** | Request, then accept or decline; chat opens only after both agree |
 | **Chat** | One-to-one real-time messaging over WebSockets, online presence, unread counts, toasts |
@@ -259,7 +259,7 @@ Everything is under `/api` (full, interactive reference at `/docs`).
 | Router | Highlights |
 |--------|------------|
 | `auth` | `POST /register` · `/login` · `/otp/request` · `/otp/verify` · `/forgot` · `/reset` · `GET /me` · `DELETE /me` |
-| `profile` | `GET/PUT /me` · `GET/PUT /questionnaire` · `GET /{user_id}` · email verification |
+| `profile` | `GET/PUT /me` · `GET/PUT /questionnaire` · `GET /{user_id}` |
 | `matching` | `GET /recommendations` · `/score/{peer_id}` · `/presence` · `POST /connect` · `GET /connections` · `POST /connections/{id}/respond` |
 | `chat` | `GET/POST /connections/{id}/messages` · `WS /ws` |
 | `listings` | `GET /` (search) · `POST /` · `POST /import` (CSV bulk import) · `GET /mine` · `PUT/DELETE /{id}` · `POST /{id}/contact` |
@@ -328,7 +328,6 @@ CI (`.github/workflows/ci.yml`) runs the backend tests and a frontend build on e
 
 ## Roadmap
 
-- Student / identity verification flow behind the verified badge
 - Push notifications (chat messages, connection requests)
 - Fixed amenity checklist on listings, with filtering by amenity
 - Hostel gender and policy rules beyond the block setting

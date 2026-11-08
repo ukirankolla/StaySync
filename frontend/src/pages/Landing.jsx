@@ -27,7 +27,7 @@ const TRUST = [
   { title: 'You control what you share', text: 'Hide your profile any time, edit your answers, or delete your account and data.' },
   { title: 'Consent first', text: 'Chat opens only after both people accept a connection.' },
   { title: 'Report & block', text: 'Report profiles or listings and block anyone, in one tap.' },
-  { title: 'Not a guarantee', text: 'Scores are recommendations. Verification badges do not guarantee safety. Talk it through and decide for yourself.' },
+  { title: 'Not a guarantee', text: 'Scores are recommendations, not guarantees. Talk it through and decide for yourself.' },
 ]
 
 export default function Landing() {
