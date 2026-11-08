@@ -40,6 +40,7 @@ export default function Register() {
     <div className="auth-wrap">
       <div className="auth-panel">
         <form className="form card" onSubmit={submit}>
+          <img src="/logo.png" alt="StaySync" className="page-logo" width="64" height="64" />
           <h2 className="center">Create your account</h2>
           <p className="center muted" style={{ fontSize: '.9rem', marginTop: -4 }}>Join StaySync and find your perfect match</p>
           {error && <div className="alert">{error}</div>}

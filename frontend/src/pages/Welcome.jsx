@@ -20,7 +20,8 @@ export default function Welcome() {
   const s = SLIDES[i]
   return (
     <div className="q-card" style={{ textAlign: 'center', paddingTop: 40 }}>
-      <div style={{ fontSize: '4rem' }} aria-hidden="true">{s.icon}</div>
+      <img src="/logo.png" alt="StaySync" className="page-logo" width="56" height="56" />
+      <div style={{ fontSize: '3rem' }} aria-hidden="true">{s.icon}</div>
       <h2 style={{ marginTop: 16 }}>{s.title}</h2>
       <p className="muted" style={{ maxWidth: 360, margin: '8px auto 24px' }}>{s.text}</p>
       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24 }}>
