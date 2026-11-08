@@ -14,7 +14,7 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <Link to={user ? '/home' : '/'} className="brand">
-        <span className="brand-icon">🏠</span>
+        <img src="/logo.png" alt="" className="brand-icon" width="32" height="32" />
         StaySync
       </Link>
       <div className={`nav-links${user ? ' nav-links-auth' : ''}`}>
