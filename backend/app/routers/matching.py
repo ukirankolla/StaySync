@@ -1,12 +1,13 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_user
-from ..models import Block, Connection, Profile, Questionnaire, User
+from ..models import Block, Connection, MatchMark, Profile, Questionnaire, User
 from ..schemas import (
     ConnectRequest,
     ConnectionOut,
@@ -17,7 +18,8 @@ from ..services.chat_manager import chat_manager
 from ..services.demo import is_demo_email
 from ..services.events import track
 from ..services.location import nearby_cities
-from ..services.matching import compute_compatibility
+from .reviews import review_summary
+from ..services.matching import compute_compatibility, lifestyle_badges
 
 router = APIRouter(prefix="/matching", tags=["matching"])
 
@@ -41,7 +43,8 @@ def _load_pair(user: User, peer_id: int, db: Session):
 
 def _to_match_result(peer: User, qa: Questionnaire | None, qb: Questionnaire | None,
                      pa: Profile | None, pb: Profile | None, *,
-                     is_fallback: bool = False, fallback_note: str | None = None) -> MatchResult:
+                     is_fallback: bool = False, fallback_note: str | None = None,
+                     db: Session | None = None) -> MatchResult:
     result = compute_compatibility(
         qa.answers if qa else {}, qb.answers if qb else {},
         pa.__dict__ if pa else {}, pb.__dict__ if pb else {},
@@ -49,6 +52,8 @@ def _to_match_result(peer: User, qa: Questionnaire | None, qb: Questionnaire | N
     # No questionnaire yet means no real score: show nothing rather than a misleading 0%.
     if not (qa and qa.answers):
         result = {**result, "score": None}
+    hide_badges = bool(pb and (pb.privacy or {}).get("lifestyle") is False)
+    summary = review_summary(db, peer.id) if db is not None else {"count": 0, "average": None}
     return MatchResult(
         user_id=peer.id,
         full_name=pb.full_name if pb else "User",
@@ -63,6 +68,9 @@ def _to_match_result(peer: User, qa: Questionnaire | None, qb: Questionnaire | N
         photos=pb.photos if pb else [],
         is_verified=pb.is_verified if pb else False,
         is_demo=is_demo_email(peer.email),
+        badges=[] if hide_badges else lifestyle_badges(qb.answers if qb else {}),
+        rating=summary["average"],
+        review_count=summary["count"],
         is_fallback=is_fallback,
         fallback_note=fallback_note,
         score=result["score"],
@@ -96,7 +104,7 @@ def _run_recommendations(user: User, db: Session, mine_q: Questionnaire | None,
         qb = db.query(Questionnaire).filter(Questionnaire.user_id == peer.id).first()
         pb = db.query(Profile).filter(Profile.user_id == peer.id).first()
         results.append(_to_match_result(peer, mine_q, qb, profile, pb,
-                                        is_fallback=is_fallback, fallback_note=fallback_note))
+                                        is_fallback=is_fallback, fallback_note=fallback_note, db=db))
     return results
 
 
@@ -107,6 +115,10 @@ def recommendations(user: User = Depends(get_current_user), db: Session = Depend
     mine_q = db.query(Questionnaire).filter(Questionnaire.user_id == user.id).first()
 
     blocked = _blocked_ids(db, user.id)
+    marks = db.query(MatchMark).filter(MatchMark.user_id == user.id).all()
+    skipped = {m.target_id for m in marks if m.kind == "skipped"}
+    saved = {m.target_id for m in marks if m.kind == "saved"}
+    blocked = blocked | skipped
     connected = {
         r for (r,) in db.query(Connection.requester_id).filter(Connection.recipient_id == user.id,
                                                                Connection.status.in_(["pending", "accepted"])).all()
@@ -146,6 +158,8 @@ def recommendations(user: User = Depends(get_current_user), db: Session = Depend
                                            is_fallback=True,
                                            fallback_note=note)
 
+    for r in results:
+        r.is_saved = r.user_id in saved
     # Rank by the transparent rules-based score only (explainable by design).
     results.sort(key=lambda r: r.score if r.score is not None else -1, reverse=True)
     track(db, user.id, "recommendations_viewed",
@@ -268,3 +282,50 @@ def onboarding(user: User = Depends(get_current_user), db: Session = Depends(get
 def presence(user: User = Depends(get_current_user)):
     from ..services.chat_manager import chat_manager
     return {"online": chat_manager.online_ids()}
+
+
+class MarkRequest(BaseModel):
+    user_id: int
+    kind: str = "saved"  # saved | skipped
+
+
+@router.post("/marks")
+def mark_member(payload: MarkRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Save (bookmark) or skip a member in Discover."""
+    if payload.kind not in ("saved", "skipped"):
+        raise HTTPException(status_code=400, detail="kind must be saved or skipped")
+    if payload.user_id == user.id or not db.get(User, payload.user_id):
+        raise HTTPException(status_code=404, detail="User not found")
+    row = db.query(MatchMark).filter(MatchMark.user_id == user.id, MatchMark.target_id == payload.user_id).first()
+    if row:
+        row.kind = payload.kind
+    else:
+        db.add(MatchMark(user_id=user.id, target_id=payload.user_id, kind=payload.kind))
+    db.commit()
+    return {"ok": True, "kind": payload.kind}
+
+
+@router.delete("/marks/{target_id}")
+def unmark_member(target_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    db.query(MatchMark).filter(MatchMark.user_id == user.id, MatchMark.target_id == target_id).delete()
+    db.commit()
+    return {"ok": True}
+
+
+@router.get("/saved", response_model=list[MatchResult])
+def saved_members(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    blocked = _blocked_ids(db, user.id)
+    out: list[MatchResult] = []
+    for m in db.query(MatchMark).filter(MatchMark.user_id == user.id, MatchMark.kind == "saved").all():
+        if m.target_id in blocked:
+            continue
+        try:
+            peer, qa, qb, pa, pb = _load_pair(user, m.target_id, db)
+        except HTTPException:
+            continue
+        if pb and not pb.is_visible:
+            continue
+        r = _to_match_result(peer, qa, qb, pa, pb, db=db)
+        r.is_saved = True
+        out.append(r)
+    return out

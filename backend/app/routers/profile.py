@@ -10,6 +10,7 @@ from ..deps import get_current_user
 from ..models import OtpCode, Profile, Questionnaire, User
 from ..questionnaire import QUESTIONNAIRE
 from ..services.demo import is_demo_email
+from ..services.matching import lifestyle_badges
 from ..schemas import (
     ProfileOut,
     ProfileUpdate,
@@ -25,6 +26,28 @@ from ..services.events import track
 from ..services.notify import send_otp
 
 router = APIRouter(prefix="/profile", tags=["profile"])
+
+
+@router.get("/me/strength")
+def profile_strength(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """How complete the profile is, and what to add next (complete profiles get better matches)."""
+    p = db.query(Profile).filter(Profile.user_id == user.id).first()
+    q = db.query(Questionnaire).filter(Questionnaire.user_id == user.id).first()
+    checks = [
+        ("name", "Add your name", 5, bool(p and p.full_name)),
+        ("age", "Add your age", 10, bool(p and p.age)),
+        ("city", "Add your city", 10, bool(p and p.city)),
+        ("budget", "Set your budget", 10, bool(p and p.budget_min)),
+        ("move_in", "Add your move-in date", 5, bool(p and p.move_in_date)),
+        ("bio", "Write a short bio", 10, bool(p and p.bio)),
+        ("photo", "Add a photo", 10, bool(p and p.photos)),
+        ("questionnaire", "Complete the lifestyle questionnaire", 30, bool(q and q.completed_at)),
+        ("verified", "Verify your email", 10, bool(p and p.is_verified)),
+    ]
+    return {
+        "percent": sum(pts for _, _, pts, ok in checks if ok),
+        "missing": [{"key": k, "label": label, "points": pts} for k, label, pts, ok in checks if not ok],
+    }
 
 
 @router.get("/me", response_model=ProfileOut)
@@ -99,6 +122,9 @@ def get_public_profile(user_id: int, user: User = Depends(get_current_user), db:
     out = _mask_private(profile)
     owner = db.get(User, user_id)
     out.is_demo = is_demo_email(owner.email if owner else None)
+    if (profile.privacy or {}).get("lifestyle") is not False:
+        q = db.query(Questionnaire).filter(Questionnaire.user_id == user_id).first()
+        out.badges = lifestyle_badges(q.answers if q else {})
     return out
 
 

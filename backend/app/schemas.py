@@ -144,6 +144,7 @@ class ProfileOut(BaseModel):
     is_verified: bool
     is_visible: bool
     is_demo: bool = False
+    badges: list[str] = []
     photos: list[str] = []
     privacy: dict = {}
     created_at: datetime
@@ -182,6 +183,10 @@ class MatchResult(BaseModel):
     photos: list[str] = []
     is_verified: bool = False
     is_demo: bool = False
+    badges: list[str] = []
+    rating: float | None = None
+    review_count: int = 0
+    is_saved: bool = False
     is_fallback: bool = False
     fallback_note: str | None = None
     score: float | None = None
@@ -252,6 +257,7 @@ class GroupOut(BaseModel):
     status: str
     created_at: datetime
     members: list[dict] = []
+    rules: list[dict] = []
 
 
 class ListingCreate(BaseModel):
@@ -329,6 +335,7 @@ class ListingOut(BaseModel):
     status: str
     created_at: datetime
     owner_name: str | None = None
+    match_score: float | None = None  # average compatibility with the residents (viewer-specific)
     residents: list["ResidentOut"] = []
 
 

@@ -14,11 +14,13 @@ const CATEGORY_LABELS = {
 export default function ProfileModal({ userId, onClose, onConnected }) {
   const [profile, setProfile] = useState(null)
   const [score, setScore] = useState(null)
+  const [reviews, setReviews] = useState(null)
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     api(`/profile/${userId}`).then(setProfile).catch((e) => setErr(e.message))
+    api(`/reviews/user/${userId}`).then(setReviews).catch(() => {})
     api(`/matching/score/${userId}`).then(setScore).catch(() => {})
   }, [userId])
 
@@ -90,6 +92,11 @@ export default function ProfileModal({ userId, onClose, onConnected }) {
             {profile.budget_min != null && (
               <p className="muted mt-8">Budget ₹{profile.budget_min.toLocaleString('en-IN')}–{profile.budget_max?.toLocaleString('en-IN')}/mo · moves {profile.move_in_date || 'flexible'}</p>
             )}
+            {profile.badges?.length > 0 && (
+              <div className="match-meta mt-8">
+                {profile.badges.map((b) => <span className="chip" key={b}>{b}</span>)}
+              </div>
+            )}
             {profile.bio && <p className="mt-8" style={{ lineHeight: 1.6 }}>{profile.bio}</p>}
 
             {score && (
@@ -119,6 +126,22 @@ export default function ProfileModal({ userId, onClose, onConnected }) {
                 )}
               </div>
             )}
+
+            <div className="mt-16">
+              <h4 style={{ margin: 0 }}>⭐ Roommate reviews</h4>
+              {reviews?.count > 0 ? (
+                <>
+                  <p className="muted" style={{ fontSize: '.85rem', margin: '4px 0 8px' }}>
+                    {reviews.average} / 5 from {reviews.count} past roommate{reviews.count > 1 ? 's' : ''} · {reviews.would_live_again_pct}% would live together again
+                  </p>
+                  {reviews.reviews.slice(0, 3).map((r, i) => (
+                    <div className="reason" key={i}>{'★'.repeat(r.rating)} {r.comment || (r.would_live_again ? 'Would live together again' : '')}</div>
+                  ))}
+                </>
+              ) : (
+                <p className="muted" style={{ fontSize: '.85rem', margin: '4px 0 0' }}>No reviews yet. Reviews come only from people who connected and chatted with them.</p>
+              )}
+            </div>
 
             <div style={{ display: 'flex', gap: 10, marginTop: 22, flexWrap: 'wrap' }}>
               <button className="btn btn-primary btn-sm" disabled={busy} onClick={connect}>

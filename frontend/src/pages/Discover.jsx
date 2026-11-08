@@ -14,12 +14,18 @@ export default function Discover() {
   const [viewing, setViewing] = useState(null)
   const [filters, setFilters] = useState({ area: '', maxBudget: '', sort: 'score' })
   const [applied, setApplied] = useState(null)
+  const [onlySaved, setOnlySaved] = useState(false)
+  const [strength, setStrength] = useState(null)
   const [needQuestionnaire, setNeedQuestionnaire] = useState(false)
 
   useEffect(() => {
     api('/profile/questionnaire/answers')
       .then((d) => setNeedQuestionnaire(!d.completed))
       .catch(() => setNeedQuestionnaire(true))
+  }, [])
+
+  useEffect(() => {
+    api('/profile/me/strength').then(setStrength).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -45,6 +51,14 @@ export default function Discover() {
       setNotice('Connection request sent!')
       setTimeout(() => setNotice(''), 3000)
     }
+    if (type === 'skipped') {
+      setBlocked((s) => new Set(s).add(userId))
+      setNotice('Skipped — you won\'t see this profile again.')
+      setTimeout(() => setNotice(''), 3000)
+    }
+    if (type === 'saved' || type === 'unsaved') {
+      setMatches((ms) => ms.map((m) => (m.user_id === userId ? { ...m, is_saved: type === 'saved' } : m)))
+    }
     if (type === 'blocked') {
       setBlocked((s) => new Set(s).add(userId))
       setNotice('User blocked.')
@@ -52,7 +66,7 @@ export default function Discover() {
     }
   }
 
-  const visible = matches.filter((m) => !blocked.has(m.user_id))
+  const visible = matches.filter((m) => !blocked.has(m.user_id) && (!onlySaved || m.is_saved))
   const sorted = [...visible].sort((a, b) => {
     if (filters.sort === 'score') return (b.score ?? -1) - (a.score ?? -1)
     if (filters.sort === 'budget') return (a.budget_min || 0) - (b.budget_min || 0)
@@ -109,6 +123,23 @@ export default function Discover() {
         <button className="btn btn-ghost btn-sm" onClick={() => { setFilters({ area: '', maxBudget: '', sort: 'score' }); setApplied(null) }}>Reset</button>
       </div>
 
+      {strength && strength.percent < 100 && (
+        <div className="card mb-16" style={{ padding: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.88rem' }}>
+            <strong>Profile strength {strength.percent}%</strong>
+            <Link to="/profile">Improve →</Link>
+          </div>
+          <div className="q-progress" style={{ margin: '8px 0' }}><div className="q-progress-fill" style={{ width: `${strength.percent}%` }} /></div>
+          <div className="muted" style={{ fontSize: '.8rem' }}>
+            Add: {strength.missing.slice(0, 3).map((x) => `${x.label} (+${x.points})`).join(', ')}
+          </div>
+        </div>
+      )}
+      <div className="mb-16">
+        <button className={`btn btn-sm ${onlySaved ? 'btn-primary' : 'btn-outline'}`} onClick={() => setOnlySaved(!onlySaved)}>
+          {onlySaved ? '★ Showing saved' : '☆ Saved only'}
+        </button>
+      </div>
       {notice && <div className="alert alert-success mb-16">{notice}</div>}
       {fallback && <div className="alert mb-16">{fallback.fallback_note}</div>}
       {needQuestionnaire && (

@@ -3,7 +3,9 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_user
-from ..models import Block, Profile, RoomGroup, User, group_members
+from pydantic import BaseModel, Field
+
+from ..models import Block, GroupRule, Profile, RoomGroup, User, group_members
 from ..schemas import GroupCreate, GroupInvite, GroupOut, GroupUpdate
 from ..services.events import track
 
@@ -20,6 +22,8 @@ def _group_out(db: Session, group: RoomGroup) -> GroupOut:
         id=group.id, name=group.name, owner_id=group.owner_id, city=group.city,
         target_area=group.target_area, budget_min=group.budget_min, budget_max=group.budget_max,
         status=group.status, created_at=group.created_at, members=members,
+        rules=[{"id": r.id, "text": r.text} for r in db.query(GroupRule).filter(GroupRule.group_id == group.id)
+               .order_by(GroupRule.id).all()],
     )
 
 
@@ -103,4 +107,34 @@ def update_group(group_id: int, payload: GroupUpdate, user: User = Depends(get_c
         setattr(group, field, value)
     db.commit()
     db.refresh(group)
+    return _group_out(db, group)
+
+
+class RuleIn(BaseModel):
+    text: str = Field(min_length=3, max_length=200)
+
+
+def _member_group(db: Session, user: User, group_id: int) -> RoomGroup:
+    group = db.get(RoomGroup, group_id)
+    if not group or user.id not in {m.id for m in group.members}:
+        raise HTTPException(status_code=404, detail="Group not found")
+    return group
+
+
+@router.post("/{group_id}/rules", response_model=GroupOut)
+def add_rule(group_id: int, payload: RuleIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Any member can propose a house rule (e.g. 'Guests allowed till 10 PM')."""
+    group = _member_group(db, user, group_id)
+    if db.query(GroupRule).filter(GroupRule.group_id == group.id).count() >= 20:
+        raise HTTPException(status_code=400, detail="A group can have at most 20 house rules.")
+    db.add(GroupRule(group_id=group.id, text=payload.text.strip(), created_by=user.id))
+    db.commit()
+    return _group_out(db, group)
+
+
+@router.delete("/{group_id}/rules/{rule_id}", response_model=GroupOut)
+def delete_rule(group_id: int, rule_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    group = _member_group(db, user, group_id)
+    db.query(GroupRule).filter(GroupRule.id == rule_id, GroupRule.group_id == group.id).delete()
+    db.commit()
     return _group_out(db, group)

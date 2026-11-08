@@ -83,6 +83,11 @@ StaySync puts **lifestyle compatibility before room allocation**:
 | **Listings** | Search by city, area and rent; rooms or whole flats; amenities and photos; admin approval before going live; CSV bulk import for owners and operators |
 | **Residents** | Posters add the flatmates already living there (they confirm). Seekers see each resident with a match score and can chat |
 | **College & hostel allocation** | Join-code intake with student consent, suggested rooms by lifestyle compatibility within room capacity and hostel block, staff edit and finalise, student change requests, aggregate campus insights |
+| **Lifestyle profile** | Two-step questionnaire (wake/sleep, cleanliness, personality, fitness, study/work hours, habits) that drives the match score and shows as lifestyle badges (hideable in privacy settings) |
+| **Profile strength** | Progress meter showing what to add for better matches |
+| **Save / skip** | Shortlist profiles to revisit, or hide ones you don't want to see again |
+| **Roommate reviews** | After you have both chatted, rate each other and say whether you'd live together again |
+| **Group house rules** | Groups agree on rules and a total budget, then jump to flats for that city and budget; flats show a match score with current residents |
 | **Feedback & outcomes** | Post-connection feedback (fit, viewing, living together); admin dashboard tracks match quality, trust, real-world conversion and institution value |
 | **Safety** | Report and block users, rule-based moderation that scores report severity, rate limiting, hardened production defaults |
 | **Admin** | Users, reports, listings and analytics dashboard |
@@ -258,6 +263,10 @@ Everything is under `/api` (full, interactive reference at `/docs`).
 | `listings` | `GET /` (search) · `POST /` · `POST /import` (CSV bulk import) · `GET /mine` · `PUT/DELETE /{id}` · `POST /{id}/contact` |
 | `listings` (residents) | `POST /{id}/residents` · `DELETE /{id}/residents/{user_id}` · `POST /{id}/residents/{user_id}/contact` · `GET /residents/invitations` · `POST /residents/{id}/respond` |
 | `groups` | `POST /` · `GET /` · `GET /{id}` · `PUT /{id}` · `POST /{id}/invite` · `DELETE /{id}/members/{user_id}` |
+| `reviews` | `POST /` · `GET /mine` · `GET /user/{id}` (roommate reviews) |
+| `matching` (extra) | `POST /marks` · `DELETE /marks/{id}` · `GET /saved` (save/skip) |
+| `profile` (extra) | `GET /me/strength` |
+| `groups` (extra) | `POST /{id}/rules` · `DELETE /{id}/rules/{rule_id}` |
 | `feedback` | `POST /` (fit and outcome after a connection) · `GET /mine` |
 | `hostels` | `POST /` · `GET /` · `POST /join` · `GET /{id}` · `POST /{id}/suggest` · `PATCH /{id}/members/{user_id}` · `POST /{id}/finalize` · `POST /{id}/reopen` · `POST /{id}/change-requests` · `PATCH /{id}/change-requests/{rid}` · `GET /{id}/insights` · `DELETE /{id}/membership` |
 | `moderation` | `POST /report` · `POST /block` · `GET /blocked` |

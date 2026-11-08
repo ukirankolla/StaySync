@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 
 export default function Groups() {
@@ -8,6 +9,7 @@ export default function Groups() {
   const [invite, setInvite] = useState('')
   const [err, setErr] = useState('')
   const [notice, setNotice] = useState('')
+  const [ruleText, setRuleText] = useState({})
 
   const load = () => api('/groups').then(setGroups).catch((e) => setErr(e.message))
   useEffect(() => { load() }, [])
@@ -38,6 +40,22 @@ export default function Groups() {
       load()
     } catch (e) { setErr(e.message) }
   }
+
+  const addRule = async (gid) => {
+    const text = (ruleText[gid] || '').trim()
+    if (!text) return
+    try {
+      await api(`/groups/${gid}/rules`, { method: 'POST', body: { text } })
+      setRuleText({ ...ruleText, [gid]: '' })
+      load()
+    } catch (e) { setErr(e.message) }
+  }
+
+  const delRule = async (gid, rid) => {
+    try { await api(`/groups/${gid}/rules/${rid}`, { method: 'DELETE' }); load() } catch (e) { setErr(e.message) }
+  }
+
+  const flatsLink = (g) => `/listings?city=${encodeURIComponent(g.city)}${g.budget_max ? `&max_rent=${Math.round(g.budget_max / Math.max(g.members.length, 1))}` : ''}`
 
   return (
     <div>
@@ -118,6 +136,27 @@ export default function Groups() {
                   </div>
                 ))}
               </div>
+              {g.budget_max != null && (
+                <p className="muted mt-8" style={{ fontSize: '.85rem', margin: '8px 0 0' }}>
+                  Total group budget up to ₹{g.budget_max.toLocaleString('en-IN')}/mo · about ₹{Math.round(g.budget_max / Math.max(g.members.length, 1)).toLocaleString('en-IN')} each
+                </p>
+              )}
+              <div className="mt-12">
+                <strong style={{ fontSize: '.85rem' }}>House rules</strong>
+                {(g.rules || []).length === 0 && <div className="muted" style={{ fontSize: '.8rem' }}>No rules yet — agree on a few before you move in.</div>}
+                {(g.rules || []).map((r) => (
+                  <div key={r.id} className="reason" style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                    <span>{r.text}</span>
+                    <button className="btn btn-ghost btn-sm" onClick={() => delRule(g.id, r.id)} aria-label="Remove rule">×</button>
+                  </div>
+                ))}
+                <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                  <input className="input" maxLength={200} placeholder="e.g. Quiet after 11 PM" value={ruleText[g.id] || ''}
+                         onChange={(e) => setRuleText({ ...ruleText, [g.id]: e.target.value })} style={{ flex: 1 }} />
+                  <button className="btn btn-ghost btn-sm" onClick={() => addRule(g.id)}>Add</button>
+                </div>
+              </div>
+              <Link to={flatsLink(g)} className="btn btn-primary btn-sm btn-block mt-12">Browse flats for this group</Link>
               {g.owner_id === g.members.find((m) => m.is_owner)?.user_id && (
                 <div className="mt-12" style={{ display: 'flex', gap: 8 }}>
                   <input className="input" placeholder="Invite by user ID" value={invite}

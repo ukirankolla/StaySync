@@ -261,3 +261,38 @@ class HostelChangeRequest(Base):
     staff_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class MatchMark(Base):
+    """A member saved (bookmarked) or skipped someone in Discover."""
+    __tablename__ = "match_marks"
+    __table_args__ = (UniqueConstraint("user_id", "target_id", name="uq_match_mark"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    target_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(8), default="saved")  # saved | skipped
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class GroupRule(Base):
+    """A house rule the members of a roommate group agree on."""
+    __tablename__ = "group_rules"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("room_groups.id", ondelete="CASCADE"), index=True)
+    text: Mapped[str] = mapped_column(String(200))
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class RoommateReview(Base):
+    """Review of someone you actually connected and chatted with (one per connection and reviewer)."""
+    __tablename__ = "roommate_reviews"
+    __table_args__ = (UniqueConstraint("reviewer_id", "connection_id", name="uq_review_reviewer_conn"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    reviewer_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    reviewee_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    connection_id: Mapped[int] = mapped_column(ForeignKey("connections.id", ondelete="CASCADE"), index=True)
+    rating: Mapped[int] = mapped_column(Integer)
+    would_live_again: Mapped[bool] = mapped_column(Boolean, default=True)
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
