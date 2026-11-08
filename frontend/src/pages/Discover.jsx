@@ -63,7 +63,7 @@ export default function Discover() {
   if (loading) return (
     <div className="page-muted">
       <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>🧠</div>
-      <div style={{ marginBottom: 12 }}>AI is analyzing compatibility…</div>
+      <div style={{ marginBottom: 12 }}>Finding compatible people…</div>
       <div className="typing-indicator" style={{ margin: '0 auto' }}>
         <div className="typing-dot" /><div className="typing-dot" /><div className="typing-dot" />
       </div>
@@ -77,12 +77,12 @@ export default function Discover() {
         <div>
           <h2 style={{ marginBottom: 4 }}>Discover matches</h2>
           <div className="live-indicator">
-            <span className="live-dot" /> AI-powered recommendations
+            <span className="live-dot" /> Compatibility-based recommendations
           </div>
         </div>
         <Link to="/questionnaire" className="btn btn-ghost btn-sm">Update questionnaire</Link>
       </div>
-      <p className="muted mb-16">Ranked by AI compatibility score. Transparency first — every score comes with reasons.</p>
+      <p className="muted mb-16">Ranked by compatibility. Every score comes with reasons — scores are recommendations, not guarantees. Profiles tagged “Demo” are examples; real members appear as they join.</p>
 
       <div className="card mb-16 filter-bar">
         <div className="field">

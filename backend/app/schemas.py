@@ -143,6 +143,7 @@ class ProfileOut(BaseModel):
     bio: str | None = None
     is_verified: bool
     is_visible: bool
+    is_demo: bool = False
     photos: list[str] = []
     privacy: dict = {}
     created_at: datetime
@@ -180,6 +181,7 @@ class MatchResult(BaseModel):
     bio: str | None = None
     photos: list[str] = []
     is_verified: bool = False
+    is_demo: bool = False
     is_fallback: bool = False
     fallback_note: str | None = None
     score: float | None = None

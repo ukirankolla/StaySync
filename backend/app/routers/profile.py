@@ -9,6 +9,7 @@ from ..database import get_db
 from ..deps import get_current_user
 from ..models import OtpCode, Profile, Questionnaire, User
 from ..questionnaire import QUESTIONNAIRE
+from ..services.demo import is_demo_email
 from ..schemas import (
     ProfileOut,
     ProfileUpdate,
@@ -95,7 +96,10 @@ def get_public_profile(user_id: int, user: User = Depends(get_current_user), db:
     profile = db.query(Profile).filter(Profile.user_id == user_id).first()
     if not profile or not profile.is_visible:
         raise HTTPException(status_code=404, detail="Profile not found")
-    return _mask_private(profile)
+    out = _mask_private(profile)
+    owner = db.get(User, user_id)
+    out.is_demo = is_demo_email(owner.email if owner else None)
+    return out
 
 
 def _mask_private(profile: Profile) -> ProfileOut:
