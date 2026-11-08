@@ -175,3 +175,23 @@ def test_recommendations_ranked_by_rules_score(client, make_user):
     recs = client.get("/api/matching/recommendations?city=Hyderabad", headers=me["headers"]).json()
     scores = [r["score"] for r in recs]
     assert scores == sorted(scores, reverse=True) and all(r["ml_score"] is None for r in recs)
+
+
+def test_demo_profiles_are_flagged(client, make_user):
+    from app.database import SessionLocal
+    from app.models import Profile, Questionnaire, User
+    db = SessionLocal()
+    demo = User(email="demo.testland@example.com", role="user")
+    db.add(demo)
+    db.flush()
+    db.add(Profile(user_id=demo.id, full_name="Demo Person", city="Testland"))
+    db.add(Questionnaire(user_id=demo.id, answers=ANS_A, completed_at=__import__("datetime").datetime.now()))
+    db.commit()
+    did = demo.id
+    db.close()
+    me = make_user("Viewer")
+    _with_profile(client, me, ANS_A)
+    recs = client.get("/api/matching/recommendations?city=Testland", headers=me["headers"]).json()
+    assert any(r["user_id"] == did and r["is_demo"] for r in recs)
+    assert client.get(f"/api/profile/{did}", headers=me["headers"]).json()["is_demo"] is True
+    assert client.get(f"/api/profile/{me['id']}", headers=me["headers"]).json().get("is_demo") in (False, None)

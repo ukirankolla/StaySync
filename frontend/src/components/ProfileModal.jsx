@@ -64,6 +64,7 @@ export default function ProfileModal({ userId, onClose, onConnected }) {
             <Avatar name={profile?.full_name} photo={profile?.photos?.[0]} size={56} />
             <div>
               <h3 style={{ margin: 0 }}>{profile?.full_name || 'Profile'}</h3>
+              {profile?.is_demo && <span className="chip chip-gray" style={{ fontSize: '.68rem' }}>Demo profile — example only, cannot reply</span>}
             </div>
           </div>
           <button className="modal-close" onClick={onClose}>×</button>
@@ -95,7 +96,7 @@ export default function ProfileModal({ userId, onClose, onConnected }) {
               <div className="mt-16">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span>🧠</span> AI Compatibility
+                    <span>🧠</span> Compatibility
                   </h4>
                   <span className="score-badge">{score.score != null ? `${Math.round(score.score)}%` : '—'}</span>
                 </div>

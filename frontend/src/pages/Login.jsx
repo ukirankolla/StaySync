@@ -4,9 +4,9 @@ import { useAuth } from '../context/AuthContext'
 import { AUTH_IMAGES } from '../lib/images'
 
 const LOGIN_QUOTES = [
-  { text: "The compatibility score made choosing a flatmate feel safe and easy.", author: "Priya, Bengaluru" },
-  { text: "Found someone who matches my sleep schedule and budget perfectly.", author: "Arjun, Delhi" },
-  { text: "The AI matching is genuinely smart — it got my lifestyle right.", author: "Neha, Mumbai" },
+  { text: "Don't just find a place to stay. Find the right person to stay with.", author: "StaySync" },
+  { text: "Your room should help you recharge — not become another problem you have to manage.", author: "StaySync" },
+  { text: "Compatibility isn't a guarantee, but it makes the everyday easier.", author: "StaySync" },
 ]
 
 export default function Login() {

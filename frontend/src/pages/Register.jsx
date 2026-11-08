@@ -4,9 +4,9 @@ import { useAuth } from '../context/AuthContext'
 import { AUTH_IMAGES } from '../lib/images'
 
 const REGISTER_QUOTES = [
-  { text: "Found a roommate who matches my routine and my budget in a single evening.", author: "Rahul, Pune" },
-  { text: "The AI suggested someone who became my best friend. StaySync just works.", author: "Kavya, Hyderabad" },
-  { text: "Transparent scores made me trust the platform. No other app does this.", author: "Vikram, Chennai" },
+  { text: "Don't just find a place to stay. Find the right person to stay with.", author: "StaySync" },
+  { text: "Your room should help you recharge — not become another problem you have to manage.", author: "StaySync" },
+  { text: "Compatibility isn't a guarantee, but it makes the everyday easier.", author: "StaySync" },
 ]
 
 export default function Register() {

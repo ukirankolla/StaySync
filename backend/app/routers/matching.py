@@ -14,6 +14,7 @@ from ..schemas import (
 )
 from ..services.agents import get_agent
 from ..services.chat_manager import chat_manager
+from ..services.demo import is_demo_email
 from ..services.events import track
 from ..services.location import nearby_cities
 from ..services.matching import compute_compatibility
@@ -61,6 +62,7 @@ def _to_match_result(peer: User, qa: Questionnaire | None, qb: Questionnaire | N
         bio=pb.bio,
         photos=pb.photos if pb else [],
         is_verified=pb.is_verified if pb else False,
+        is_demo=is_demo_email(peer.email),
         is_fallback=is_fallback,
         fallback_note=fallback_note,
         score=result["score"],

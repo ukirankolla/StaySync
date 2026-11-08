@@ -29,7 +29,7 @@ export default function Questionnaire() {
     setErr('')
     try {
       await api('/profile/questionnaire', { method: 'PUT', body: { answers } })
-      setMsg('Questionnaire saved! Your AI matches are now active.')
+      setMsg('Questionnaire saved! Your matches are now active.')
       setTimeout(() => navigate('/discover'), 900)
     } catch (e) {
       setErr(e.message)
@@ -43,7 +43,7 @@ export default function Questionnaire() {
   return (
     <div className="q-card">
       <h2 className="center">Lifestyle Questionnaire</h2>
-      <p className="center muted">Honest answers give you honest AI matches.</p>
+      <p className="center muted">Honest answers give you honest matches. You can edit them any time.</p>
 
       <div className="q-progress"><div className="q-progress-fill" style={{ width: `${progress}%` }} /></div>
       <div className="center muted" style={{ fontSize: '.85rem', marginBottom: 20 }}>
@@ -85,7 +85,7 @@ export default function Questionnaire() {
         {msg && <div className="alert alert-success">{msg}</div>}
         {err && <div className="alert">{err}</div>}
         <button className="btn btn-primary btn-block" disabled={busy} onClick={submit}>
-          {busy ? 'Saving…' : `🤖 Save & activate AI matching (${answered}/${total})`}
+          {busy ? 'Saving…' : `Save & activate matching (${answered}/${total})`}
         </button>
       </div>
     </div>
