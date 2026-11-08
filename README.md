@@ -2,9 +2,10 @@
 
 # 🏠 StaySync
 
-**Find a room, see the real price and amenities, and talk to the people who already live there, before you move in.**
+**Don't just find a place to stay. Find the right person to stay with.**
 
-Roommate compatibility and flat-finding for students and young professionals.
+StaySync is a roommate compatibility platform: people find compatible roommates *before* they move in,
+and colleges and hostels create better-matched shared rooms.
 One codebase for the **website**, an installable **PWA**, and **Android / iOS apps**.
 
 ![React](https://img.shields.io/badge/React_18-61DAFB?logo=react&logoColor=black)
@@ -32,47 +33,84 @@ One codebase for the **website**, an installable **PWA**, and **Android / iOS ap
 
 <p align="center"><img src="docs/screenshots/flats-desktop.png" width="720" alt="Desktop flats page"></p>
 
-## Why StaySync
+## Why StaySync (our motive)
 
-Finding a room usually means guessing: the listing shows a price and a few photos, and you only meet your
-flatmates after you've signed. StaySync fixes that:
+**A room is more than four walls.** When people move to a new city for college or work, they often share a room
+with someone they have never met. The room may be affordable and well located, but the people sharing it may
+have very different routines, expectations and habits: sleep schedules, cleanliness, noise, guests, food.
+That friction is avoidable. People don't only need a place to stay; they need a living arrangement that fits
+how they live.
 
-- **See everything up front**: rent, deposit, amenities, photos and availability.
-- **Meet the people first**: every listing shows who already lives there, with a compatibility score for *you*.
-- **Chat before you commit**: message the owner **and** the current residents.
-- **Matches with reasons**: scores are transparent ("Both sleep around 10 PM"), never a mystery percentage.
+StaySync puts **lifestyle compatibility before room allocation**:
+
+> Better roommates. Better routines. More room to grow.
+> A compatible living environment won't build anyone's career for them, but it can make learning, work and
+> personal goals easier to pursue.
+
+### Who it is for
+
+| Audience | What they do on StaySync |
+|----------|--------------------------|
+| **Individuals**: students moving cities, young professionals, people relocating, PG and shared-flat seekers | Build a profile, find compatible people, chat, then look for a place together |
+| **Colleges, hostels, PG operators** | Collect student preferences at registration, get suggested pairings, review and make the final room allocation |
+
+### How a person uses the app
+
+1. **Create a profile**: budget, city and area, move-in date, and a 12-question lifestyle questionnaire (sleep, cleanliness, noise, guests, food, smoking, pets).
+2. **Find compatible people**: Discover ranks real members by compatibility, each with plain-language reasons ("Both sleep around 10 PM", "Similar noise expectations", "Budgets overlap").
+3. **Connect before committing**: send a request; chat opens only when both accept. Discuss boundaries and expectations, and decide for yourselves.
+4. **Choose a place together**: form a group, browse listings with price, deposit, amenities and photos, and see who already lives there, with a score for *you*. Message the owner and the residents.
+5. **Tell us how it went**: a short feedback form after connecting helps measure whether matches actually lead to people living together.
+
+### Principles
+
+- **Explainable, not mysterious.** A rules-based score with the reasons shown. Scores are recommendations, never guarantees.
+- **You control your data.** Hide your profile, edit your answers, delete your account. Chat is opt-in on both sides.
+- **Trust is part of the product.** Report and block tools, listing approval before going live, and a verified badge that never claims to guarantee safety.
+- **Humans decide.** For colleges, staff review and make the final allocation, and students have a documented way to request a change.
+- **Real data only.** StaySync shows real members and real listings, never fabricated ones.
 
 ## Features
 
 | Area | What you get |
 |------|--------------|
 | **Accounts** | Email/phone registration, password and OTP login, password reset, in-app account deletion |
-| **Profiles** | Age, occupation, city/area, budget, move-in date, bio, photos, verified badge |
-| **Matching** | 12-question lifestyle questionnaire, weighted compatibility score with plain-language reasons, ML-assisted ranking |
-| **Listings** | Search by city, area and rent; rooms or whole flats; amenities, photos; admin approval before going live |
-| **Residents** | Posters add the flatmates already living there (they confirm). Seekers see each resident with a match score and can chat |
+| **Profiles** | Age, occupation, city/area, budget, move-in date, bio, photos, privacy controls, verified badge |
+| **Matching** | 12-question lifestyle questionnaire; weighted, explainable compatibility score with reasons; nearby-city fallback when a city has no members yet |
+| **Connections** | Request, then accept or decline; chat opens only after both agree |
 | **Chat** | One-to-one real-time messaging over WebSockets, online presence, unread counts, toasts |
-| **Connections & groups** | Request → accept/decline flow; roommate groups to house-hunt together |
-| **Safety** | Report and block users, rule-based moderation agent that scores report severity |
+| **Groups** | Roommate groups to house-hunt together |
+| **Listings** | Search by city, area and rent; rooms or whole flats; amenities and photos; admin approval before going live; CSV bulk import for owners and operators |
+| **Residents** | Posters add the flatmates already living there (they confirm). Seekers see each resident with a match score and can chat |
+| **College & hostel allocation** | Join-code intake with student consent, suggested rooms by lifestyle compatibility within room capacity and hostel block, staff edit and finalise, student change requests, aggregate campus insights |
+| **Feedback & outcomes** | Post-connection feedback (fit, viewing, living together); admin dashboard tracks match quality, trust, real-world conversion and institution value |
+| **Safety** | Report and block users, rule-based moderation that scores report severity, rate limiting, hardened production defaults |
 | **Admin** | Users, reports, listings and analytics dashboard |
 | **Mobile** | App-style UI (bottom tabs, full-screen chat, safe areas), PWA install, Android & iOS apps |
 
 ## How matching works
 
-Weighted, transparent scoring across the questionnaire:
+Matching is **rules-based and explainable**. Each pair gets a weighted score across the questionnaire, and the
+app shows the reasons behind it:
 
-| Category | Weight |
-|----------|-------:|
-| Lifestyle | 30% |
-| Sleep & noise | 20% |
-| Budget & location | 20% |
-| Cleanliness | 15% |
-| Routine | 10% |
-| Social | 5% |
+| Category | Weight | What is compared |
+|----------|-------:|------------------|
+| Lifestyle | 30% | Smoking, drinking, food, pets |
+| Sleep & noise | 20% | Sleep and wake times, noise tolerance, quiet hours |
+| Budget & location | 20% | Budget overlap, city, preferred area |
+| Cleanliness | 15% | Shared-space standards |
+| Routine | 10% | How fixed the study/work routine is |
+| Social | 5% | Guests and social activity at home |
 
-A `RandomForestClassifier` (scikit-learn, trained by `backend/scripts/train_model.py` and auto-trained on first
-boot) predicts pairwise match probability and is blended into the discovery ranking. It can be retrained on
-real interaction data via `POST /api/ml/retrain`.
+Recommendations are ranked by this score only. Members who haven't completed the questionnaire show no score
+rather than a misleading one. If a city has no members yet, the app says so and shows real members from nearby
+cities in the same state.
+
+For hostels, the same habit-based comparison (without budget or location) groups students into rooms, respecting
+room capacity and each student's hostel block; staff review, edit and finalise.
+
+An experimental scikit-learn model (`backend/app/services/ml_model.py`, `POST /api/ml/retrain`, admin only) is
+kept for future research. It is **not used for ranking or shown to users**.
 
 Three small rule-based **agents** (onboarding guidance, match-reason summaries, report moderation) are designed
 to be swapped for an LLM later.
@@ -86,7 +124,7 @@ to be swapped for an LLM later.
  FastAPI  (Python 3.12)
    ├─ JWT + bcrypt auth, OTP login
    ├─ SQLAlchemy  →  SQLite (dev)  /  PostgreSQL on Supabase (prod)
-   ├─ Compatibility scoring + scikit-learn model
+   ├─ Explainable compatibility scoring (rules-based)
    ├─ Rule-based agents (onboarding, match reasons, moderation)
    └─ WebSocket chat manager
 ```
@@ -98,7 +136,7 @@ to be swapped for an LLM later.
 | Backend | FastAPI, SQLAlchemy, Pydantic, scikit-learn |
 | Data | SQLite (development), PostgreSQL via Supabase (production), Supabase Storage for photos |
 | Email | Brevo HTTPS API (preferred), SMTP, or console output in development |
-| Hosting | Vercel (frontend), Railway (backend), Supabase (database + storage) |
+| Hosting | Vercel (frontend), Render (backend), Supabase (database + storage) |
 
 ## Getting started
 
@@ -157,7 +195,7 @@ Frontend (`frontend/.env`): `VITE_API_URL` is the backend's URL in production an
 
 ## Deployment
 
-Three pieces: **Supabase** (Postgres + storage), **Railway** (API, needs a persistent server for WebSockets) and **Vercel** (website).
+Three pieces: **Supabase** (Postgres + storage), **Render** (API, needs a long-running server for WebSockets) and **Vercel** (website). Railway also works.
 
 <details>
 <summary><b>1. Supabase: database and photo storage</b></summary>
@@ -167,25 +205,7 @@ Three pieces: **Supabase** (Postgres + storage), **Railway** (API, needs a persi
 3. *Storage*: create a **public** bucket named `staysync`.
 </details>
 
-<details>
-<summary><b>2. Railway: backend</b></summary>
-
-1. Create a Railway project → **Deploy from GitHub**. It picks up `backend/railway.json` and `backend/Dockerfile`.
-2. Set the variables: `ENV=production`, `DATABASE_URL`, `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`,
-   `PUBLIC_BASE_URL`, `CORS_ORIGINS` (your Vercel domain), `STORAGE_BACKEND=supabase`, the three `SUPABASE_*`
-   values and `BREVO_API_KEY`.
-3. The ML model trains automatically on first boot. New tables (including `listing_residents`) are created at startup.
-</details>
-
-<details>
-<summary><b>3. Vercel: website</b></summary>
-
-1. Import the repo, set the **root directory** to `frontend` (framework: Vite, config in `frontend/vercel.json`).
-2. Add the environment variable `VITE_API_URL=https://<your-backend>.up.railway.app`.
-3. Add a custom domain and submit the sitemap in Google Search Console.
-</details>
-
-### Render (free alternative to Railway)
+### Backend on Render (what production uses)
 
 `render.yaml` is a Blueprint for the backend. In Render choose **New → Blueprint**, select this repo, then fill in
 `DATABASE_URL` (Supabase *Session pooler* string), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `SUPABASE_SERVICE_KEY`,
@@ -193,13 +213,31 @@ Three pieces: **Supabase** (Postgres + storage), **Railway** (API, needs a persi
 Free services sleep after 15 minutes idle (about a minute to wake); point an uptime monitor at `/api/health` to reduce that.
 Then set `VITE_API_URL` on Vercel to the Render URL and redeploy the frontend.
 
+<details>
+<summary><b>Alternative: Railway backend</b></summary>
+
+1. Create a Railway project → **Deploy from GitHub**. It picks up `backend/railway.json` and `backend/Dockerfile`.
+2. Set the variables: `ENV=production`, `DATABASE_URL`, `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`,
+   `PUBLIC_BASE_URL`, `CORS_ORIGINS` (your Vercel domain), `STORAGE_BACKEND=supabase`, the three `SUPABASE_*`
+   values and `BREVO_API_KEY`.
+3. The ML model trains automatically on first boot. New tables (including hostel and feedback tables) are created at startup.
+</details>
+
+<details>
+<summary><b>Vercel: website</b></summary>
+
+1. Import the repo, set the **root directory** to `frontend` (framework: Vite, config in `frontend/vercel.json`).
+2. Add the environment variable `VITE_API_URL=https://<your-backend-host>`.
+3. Add a custom domain and submit the sitemap in Google Search Console.
+</details>
+
 ## Mobile apps (Android & iOS)
 
 The store apps are the same frontend, wrapped with Capacitor:
 
 ```bash
 cd frontend
-echo "VITE_API_URL=https://<your-backend>.up.railway.app" > .env.production
+echo "VITE_API_URL=https://<your-backend-host>" > .env.production
 npm run mobile:android      # build, sync, open Android Studio
 npm run mobile:ios          # macOS: build, sync, open Xcode
 ```
@@ -217,9 +255,11 @@ Everything is under `/api` (full, interactive reference at `/docs`).
 | `profile` | `GET/PUT /me` · `GET/PUT /questionnaire` · `GET /{user_id}` · email verification |
 | `matching` | `GET /recommendations` · `/score/{peer_id}` · `/presence` · `POST /connect` · `GET /connections` · `POST /connections/{id}/respond` |
 | `chat` | `GET/POST /connections/{id}/messages` · `WS /ws` |
-| `listings` | `GET /` (search) · `POST /` · `GET /mine` · `PUT/DELETE /{id}` · `POST /{id}/contact` |
+| `listings` | `GET /` (search) · `POST /` · `POST /import` (CSV bulk import) · `GET /mine` · `PUT/DELETE /{id}` · `POST /{id}/contact` |
 | `listings` (residents) | `POST /{id}/residents` · `DELETE /{id}/residents/{user_id}` · `POST /{id}/residents/{user_id}/contact` · `GET /residents/invitations` · `POST /residents/{id}/respond` |
 | `groups` | `POST /` · `GET /` · `GET /{id}` · `PUT /{id}` · `POST /{id}/invite` · `DELETE /{id}/members/{user_id}` |
+| `feedback` | `POST /` (fit and outcome after a connection) · `GET /mine` |
+| `hostels` | `POST /` · `GET /` · `POST /join` · `GET /{id}` · `POST /{id}/suggest` · `PATCH /{id}/members/{user_id}` · `POST /{id}/finalize` · `POST /{id}/reopen` · `POST /{id}/change-requests` · `PATCH /{id}/change-requests/{rid}` · `GET /{id}/insights` · `DELETE /{id}/membership` |
 | `moderation` | `POST /report` · `POST /block` · `GET /blocked` |
 | `admin` | `GET /analytics` · `/users` (suspend / unsuspend) · `/reports` (review) · `/listings` (approve / reject) |
 | `ml` | `GET /status` · `POST /predict` · `POST /retrain` |
@@ -232,13 +272,13 @@ backend/
   app/
     main.py  config.py  database.py  models.py  schemas.py  security.py  deps.py
     questionnaire.py            # questions, weights, reason templates
-    routers/                    # auth, profile, matching, chat, groups, listings, moderation, admin, ml, uploads
+    routers/                    # auth, profile, matching, chat, groups, listings, hostels, feedback, moderation, admin, ml, uploads
     services/                   # matching, ml_model, agents, chat_manager, notify (email), events, locations
   scripts/                      # seed.py, train_model.py
 frontend/
   src/
     pages/                      # Landing, Login, Register, OTP, Profile, Questionnaire, Discover,
-                                # Connections, Chat, Groups, Listings, Admin
+                                # Connections, Chat, Groups, Listings, Hostels, Admin
     components/                 # Navbar, BottomNav, MatchCard, ProfileModal, AiAssistant, …
     lib/native.js               # Capacitor startup (status bar, splash, back button)
     styles.css                  # design system + responsive / app-shell rules
@@ -277,25 +317,16 @@ CI (`.github/workflows/ci.yml`) runs the backend tests and a frontend build on e
 
 ## Roadmap
 
-- Push notifications (chat messages, connection requests): also strengthens App Store review
+- Student / identity verification flow behind the verified badge
+- Push notifications (chat messages, connection requests)
 - Fixed amenity checklist on listings, with filtering by amenity
-- Instant "message the owner" without a prior connection request
-- Redis-backed chat for multi-instance deployments
+- Hostel gender and policy rules beyond the block setting
+- Redis-backed chat and rate limiting for multi-instance deployments
 - Replace the rule-based agents with an LLM
-- Automated tests and CI
+- Pilot: one city, a few colleges or PGs, measuring whether matches lead to people living together
 
 ## Contributing
 
 1. Branch from `main`: `feature/<short-name>` or `fix/<short-name>`.
 2. Keep changes focused; run the backend and `npm run build` in `frontend/` before opening a pull request.
 3. Describe what changed and how you tested it. Add screenshots for UI changes.
-
-## Product alignment (SyncStay concept deck)
-
-| Deck principle | In the app |
-|---|---|
-| Explainable matching, no mystery AI score | Rules-based weighted score with plain-language reasons; ranking uses this score only |
-| Scores are recommendations, not guarantees | Notice on Discover, match cards and hostel rooms |
-| Mutual opt-in, chat, report/block, privacy controls | Connection must be accepted by both sides; report, block, hide profile, delete account |
-| Outcomes, not downloads | Post-connection feedback (fit / viewing / living together) and outcome metrics in the admin dashboard |
-| Colleges & hostels: intake, matching, admin review, allocation | `/hostels`: join code + consent intake, capacity- and block-aware suggestions, staff edit and finalise, student change requests, aggregate campus insights |
