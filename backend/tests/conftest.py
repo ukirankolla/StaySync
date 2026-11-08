@@ -33,7 +33,7 @@ _n = {"i": 0}
 def make_user(client):
     def _make(name="Test User"):
         _n["i"] += 1
-        email = f"user{_n['i']}@example.com"
+        email = f"user{_n['i']}@staysync-tests.org"
         r = client.post("/api/auth/register", json={"email": email, "password": "password123", "full_name": name})
         assert r.status_code == 200, r.text
         tok = r.json()["access_token"]

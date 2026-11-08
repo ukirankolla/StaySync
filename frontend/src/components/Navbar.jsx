@@ -13,13 +13,14 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <Link to={user ? '/discover' : '/'} className="brand">
+      <Link to={user ? '/home' : '/'} className="brand">
         <span className="brand-icon">🏠</span>
         StaySync
       </Link>
       <div className={`nav-links${user ? ' nav-links-auth' : ''}`}>
         {user ? (
           <>
+            <NavLink to="/home" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Home</NavLink>
             <NavLink to="/discover" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Discover</NavLink>
             <NavLink to="/connections" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Connections</NavLink>
             <NavLink to="/groups" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>Groups</NavLink>

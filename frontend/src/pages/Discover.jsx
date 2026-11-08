@@ -131,7 +131,7 @@ export default function Discover() {
           </div>
           <div className="q-progress" style={{ margin: '8px 0' }}><div className="q-progress-fill" style={{ width: `${strength.percent}%` }} /></div>
           <div className="muted" style={{ fontSize: '.8rem' }}>
-            Add: {strength.missing.slice(0, 3).map((x) => `${x.label} (+${x.points})`).join(', ')}
+            Next: {strength.missing.slice(0, 3).map((x) => `${x.label} (+${x.points})`).join(', ')}
           </div>
         </div>
       )}

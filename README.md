@@ -84,6 +84,8 @@ StaySync puts **lifestyle compatibility before room allocation**:
 | **Residents** | Posters add the flatmates already living there (they confirm). Seekers see each resident with a match score and can chat |
 | **College & hostel allocation** | Join-code intake with student consent, suggested rooms by lifestyle compatibility within room capacity and hostel block, staff edit and finalise, student change requests, aggregate campus insights |
 | **Lifestyle profile** | Two-step questionnaire (wake/sleep, cleanliness, personality, fitness, study/work hours, habits) that drives the match score and shows as lifestyle badges (hideable in privacy settings) |
+| **Welcome carousel & Home** | First launch of the phone app (or a first visit on a small screen) shows a 3-slide welcome; after login, Home shows profile strength, quick actions, unread chats and top matches |
+| **Demo chats** | Demo profiles accept connections automatically and answer with clearly labelled sample replies so the chat flow can be shown; they can't be reviewed |
 | **Profile strength** | Progress meter showing what to add for better matches |
 | **Save / skip** | Shortlist profiles to revisit, or hide ones you don't want to see again |
 | **Roommate reviews** | After you have both chatted, rate each other and say whether you'd live together again |
@@ -225,7 +227,7 @@ Then set `VITE_API_URL` on Vercel to the Render URL and redeploy the frontend.
 2. Set the variables: `ENV=production`, `DATABASE_URL`, `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`,
    `PUBLIC_BASE_URL`, `CORS_ORIGINS` (your Vercel domain), `STORAGE_BACKEND=supabase`, the three `SUPABASE_*`
    values and `BREVO_API_KEY`.
-3. The ML model trains automatically on first boot. New tables (including hostel and feedback tables) are created at startup.
+3. The ML model trains automatically on first boot. New tables (including hostel, feedback, review, saved/skipped and group-rule tables) are created at startup.
 </details>
 
 <details>

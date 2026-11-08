@@ -7,6 +7,7 @@ from ..questionnaire import (
     MATCH_REASON_TEMPLATES,
     MISMATCH_REASONS,
     PARTIAL_MATCH,
+    normalize_answers,
     QUESTION_WEIGHT,
     SCALE_KEYS,
     WEIGHTS,
@@ -87,6 +88,7 @@ def compute_compatibility(
     profile_b: dict | None = None,
 ) -> dict:
     """Returns {score, category_scores, sub_scores, reasons}."""
+    qa, qb = normalize_answers(qa), normalize_answers(qb)
     profile_a = profile_a or {}
     profile_b = profile_b or {}
 
@@ -147,7 +149,7 @@ BADGE_LABELS = {
 
 def lifestyle_badges(answers: dict | None, limit: int = 6) -> list[str]:
     """Short, non-sensitive tags shown on cards (the owner can hide them in privacy settings)."""
-    a = answers or {}
+    a = normalize_answers(answers)
     out: list[str] = []
     for key, mapping in BADGE_LABELS.items():
         label = mapping.get(str(a.get(key)))

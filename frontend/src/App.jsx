@@ -7,6 +7,8 @@ import MessageToasts from './components/MessageToasts'
 import InstallApp from './components/InstallApp'
 import AiAssistant from './components/AiAssistant'
 import Landing from './pages/Landing'
+import Welcome, { WELCOME_KEY } from './pages/Welcome'
+import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import OTPLogin from './pages/OTPLogin'
@@ -20,6 +22,16 @@ import Groups from './pages/Groups'
 import Listings from './pages/Listings'
 import Hostels from './pages/Hostels'
 import Admin from './pages/Admin'
+
+// First launch of the phone app (or a first visit on a small screen) starts with the welcome carousel.
+function LandingGate() {
+  let seen = true
+  try { seen = !!localStorage.getItem(WELCOME_KEY) } catch { /* ignore */ }
+  const native = !!window.Capacitor?.isNativePlatform?.()
+  const small = typeof window !== 'undefined' && window.innerWidth < 768
+  if (!seen && (native || small)) return <Navigate to="/welcome" replace />
+  return <Landing />
+}
 
 function Protected({ children }) {
   const { user, loading } = useAuth()
@@ -47,10 +59,12 @@ export default function App() {
       <Navbar />
       <main className="container" key={pathname}>
         <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={user ? <Navigate to="/discover" replace /> : <Login />} />
-          <Route path="/register" element={user ? <Navigate to="/discover" replace /> : <Register />} />
-          <Route path="/otp" element={user ? <Navigate to="/discover" replace /> : <OTPLogin />} />
+          <Route path="/" element={user ? <Navigate to="/home" replace /> : <LandingGate />} />
+          <Route path="/welcome" element={<Welcome />} />
+          <Route path="/home" element={<Protected><Home /></Protected>} />
+          <Route path="/login" element={user ? <Navigate to="/home" replace /> : <Login />} />
+          <Route path="/register" element={user ? <Navigate to="/home" replace /> : <Register />} />
+          <Route path="/otp" element={user ? <Navigate to="/home" replace /> : <OTPLogin />} />
           <Route path="/forgot-password" element={user ? <Navigate to="/profile" replace /> : <ForgotPassword />} />
           <Route path="/profile" element={<Protected><Profile /></Protected>} />
           <Route path="/questionnaire" element={<Protected><Questionnaire /></Protected>} />
